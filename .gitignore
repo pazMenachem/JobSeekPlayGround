@@ -699,4 +699,7 @@ FodyWeavers.xsd
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
+### MISC
+.vscode
+
 # End of https://www.toptal.com/developers/gitignore/api/python,java,c,c++,windows,visualstudio,visualstudiocode

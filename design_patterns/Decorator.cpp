@@ -19,14 +19,6 @@ class INotifier {
         virtual void sendNotify() const = 0;
 };
 
-// Basic notification implementation
-class BaseNotifier: public INotifier {
-    public:
-        void sendNotify() const override {
-            cout << "Base notification" << endl;
-        }
-};
-
 // Base decorator
 class NotifierDecorator: public INotifier {
     public:
@@ -40,6 +32,14 @@ class NotifierDecorator: public INotifier {
         
     protected:
         INotifier* _notifier;
+};
+
+// Basic notification implementation
+class BaseNotifier: public INotifier {
+    public:
+        void sendNotify() const override {
+            cout << "Base notification" << endl;
+        }
 };
 
 // Email decorator

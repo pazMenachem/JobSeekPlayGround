@@ -9,8 +9,8 @@
 6. Strategy Pattern
 7. Template Method Pattern
 8. Decorator Pattern
-
-## Pending Patterns 🚧
 9. State Pattern
 10. Facade Pattern
 11. Adapter Pattern
+
+## Pending Patterns 🚧

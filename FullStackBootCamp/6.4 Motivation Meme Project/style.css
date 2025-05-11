@@ -1,0 +1,28 @@
+body {
+  background-color: black;
+  color: white;
+}
+
+h1 {
+    font-size: 5rem;
+    text-transform: uppercase;
+}
+
+p {
+    font-size: 2rem;
+}
+
+.container {
+    width: 50%;
+    margin: 10% 25%;
+}
+
+.image_container{
+    border: 5px solid white;
+    width: 100%;
+}
+
+.text{
+    text-align: center;
+    font-family: Libre Baskerville;
+}

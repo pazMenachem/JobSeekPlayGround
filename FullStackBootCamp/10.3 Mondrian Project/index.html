@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mondrian Project</title>
+  <style>
+
+    body{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: green;
+
+    }
+    .container{
+      background-color: black;
+      height: 748px;
+      width: 748px;
+      display: grid;
+      grid-template: 414px / 347px 401px;
+      gap: 9px;
+    }
+
+    .grid-item{
+      background-color: #F0F1EC;
+    }
+
+    #square-one{
+      background-color: #E72F24;
+    }
+
+    #square-three{
+      display: grid;
+      grid-template-rows: calc(140px + 155px);
+      gap: 9px;
+      background-color: black;
+    }
+
+    #square-four{
+      display: grid;
+      grid-template: 1fr / calc(100% - 50px);
+      background-color: black;
+      gap: 9px;
+    }
+
+    #inner-four-left{
+      display: grid;
+      grid-template-rows: calc(100% - 30px); 
+      gap: 9px;
+      background-color: black;
+    }
+
+    #bot-inner{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      background-color: black;
+    }
+    </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="square-one" class="grid-item"></div> <!-- Square One -->
+    <div class="grid-item"></div> <!-- Square Two -->
+    
+    <div id="square-three" class="grid-item">
+      <div class="grid-item"></div>
+      <div class="grid-item"></div>
+    </div>
+
+    <div id="square-four" class="grid-item">
+      <div id="inner-four-left">
+          <div class="grid-item"></div>
+          <div id="bot-inner" class="grid-item">
+            <div style="background-color:#F9D01E;"></div>
+            <div style="background-color:#004592"></div>
+          </div>
+      </div>
+      <!-- <div class="grid-item">
+
+      </div> -->
+    </div>
+  </div>
+</body>
+
+</html>
+<!-- /* 
+Write your CSS here 
+Gap Colour: #000
+White: #F0F1EC
+Red: #E72F24
+Black: #232629
+Blue: #004592
+Yellow: #F9D01E
+
+For dimensions, see dimensions.png image.
+HINT: Remember you can't change the properties of grid lines.
+But grid lines are transparent!
+*/ -->

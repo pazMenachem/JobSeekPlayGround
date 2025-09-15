@@ -1,0 +1,62 @@
+[project]
+name = "calculatorCICD"          # package name (shows up on pip, PyPI, etc.)
+version = "0.1.0"
+description = "A tiny calculator project to practice CI/CD"
+readme = "README.md"              # optional, shows on PyPI if you publish
+requires-python = ">=3.10"        # minimum Python version
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",           # Testing framework
+    "pytest-cov>=4.0",       # Coverage reporting - shows which code is tested
+    "flake8>=6.0",           # Linting - catches style issues and some bugs
+    "black>=23.0",           # Code formatter - makes code look consistent
+    "mypy>=1.0",             # Type checker - catches type-related bugs
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]   # setuptools builds it, wheel packages it
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]   # where pytest looks for tests
+pythonpath = ["src"]    # add ./src so imports work
+# Add coverage reporting to pytest
+addopts = "--cov=src --cov-report=html --cov-report=term-missing"
+
+# Configure coverage.py
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "src/__main__.py",       # Exclude main entry point
+    "*/tests/*",             # Exclude test files
+    "*/venv/*",              # Exclude virtual environment
+    "*/__pycache__/*",       # Exclude cache files
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",      # Standard pragma to exclude lines
+    "def __repr__",          # Exclude __repr__ methods
+    "if self.debug:",        # Exclude debug code
+    "if settings.DEBUG",     # Exclude debug settings
+    "raise AssertionError",  # Exclude assertion errors
+    "raise NotImplementedError",  # Exclude not implemented
+    "if 0:",                 # Exclude dead code
+    "if __name__ == .__main__.:",  # Exclude main blocks
+]
+ignore_errors = true
+show_missing = true
+
+# Configure Black formatter
+[tool.black]
+line-length = 88        # Default is 88, good balance between readability and compactness
+target-version = ['py310']  # Match our minimum Python version
+include = '\.pyi?$'     # Format .py and .pyi files
+
+# Configure mypy type checker
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true    # Require type hints on all functions

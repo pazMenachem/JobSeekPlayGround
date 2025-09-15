@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SecureBank Pro - Login</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 400px; 
+            margin: 100px auto; 
+            padding: 20px;
+        }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 10px 0; 
+            box-sizing: border-box;
+        }
+        button { 
+            width: 100%;
+            background: #28a745; 
+            color: white; 
+            padding: 12px; 
+            border: none; 
+            cursor: pointer;
+        }
+        .error { color: red; }
+        .security { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>🛡️ SecureBank Pro Login</h2>
+    
+    <div class="security">
+        <strong>🔒 Security:</strong> CSRF Protection Enabled
+    </div>
+    
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+    
+    <form method="POST" action="/login">
+        <!-- CSRF Token (Hidden) -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+    
+    <p><small>Demo: admin/admin or user/user</small></p>
+</body>
+</html>

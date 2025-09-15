@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SecureBank Pro - Dashboard</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 50px auto; 
+            padding: 20px;
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        .balance { 
+            background: #f0f0f0; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 5px;
+        }
+        input { 
+            padding: 10px; 
+            margin: 5px; 
+            width: 200px;
+        }
+        button { 
+            background: #28a745; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            cursor: pointer;
+        }
+        .message { 
+            color: green; 
+            background: #e8f5e8; 
+            padding: 10px; 
+            margin: 10px 0;
+        }
+        .security { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Welcome, {{ username }}!</h2>
+        <a href="/logout">Logout</a>
+    </div>
+    
+    <div class="security">
+        🛡️ This application is protected against CSRF attacks
+    </div>
+    
+    <div class="balance">
+        <h3>💰 Balance: ${{ balance }}</h3>
+    </div>
+    
+    {% if message %}
+        <div class="message">{{ message }}</div>
+    {% endif %}
+    
+    <h3>💸 Transfer Money</h3>
+    <form method="POST" action="/transfer">
+        <!-- CSRF Token (Hidden) -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        
+        <input type="text" name="recipient" placeholder="Recipient username" required>
+        <input type="number" name="amount" placeholder="Amount" min="1" required>
+        <button type="submit">Transfer</button>
+    </form>
+    
+    <p><small>🛡️ This form includes CSRF protection!</small></p>
+</body>
+</html>

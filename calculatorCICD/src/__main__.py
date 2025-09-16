@@ -4,7 +4,7 @@ Main entry point for the calculatorCICD application.
 This module demonstrates the calculator functions with sample operations.
 """
 
-from calc import add, sub, mul, div
+from .calc import add, sub, mul, div
 
 
 def main() -> None:

@@ -1,7 +1,16 @@
+# Simple but improved Dockerfile for calculatorCICD
 FROM python:3.12-slim
 
+# Set working directory
 WORKDIR /app
 
-COPY src ./src
+# Copy and install dependencies first (for better caching)
+COPY pyproject.toml .
+COPY src/__init__.py src/
+RUN pip install .
 
-CMD ["python", "src/__main__.py"]
+# Copy the rest of the source code
+COPY src/ ./src/
+
+# Run the calculator
+CMD ["python", "-m", "src"]

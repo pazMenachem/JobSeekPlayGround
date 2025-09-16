@@ -71,9 +71,9 @@ jobs:
         echo "🧪 Running tests with coverage..."
         pytest -v --cov=src --cov-report=xml --cov-report=html --cov-report=term-missing --junitxml=pytest-results.xml
         
-    # Upload test results as artifacts
+    # Updated to actions/upload-artifact@v4
     - name: 📊 Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()  # Upload even if tests fail
       with:
         name: test-results-py${{ matrix.python-version }}
@@ -125,8 +125,9 @@ jobs:
         echo "🔍 Running static security analysis..."
         bandit -r src -f json -o bandit-report.json || true
         
+    # Updated to actions/upload-artifact@v4
     - name: 📊 Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: security-reports
@@ -143,8 +144,9 @@ jobs:
     if: always()  # Run even if previous jobs fail
     
     steps:
+    # FIXED: Updated to actions/download-artifact@v4
     - name: 📥 Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       
     - name: 📊 Generate build summary
       run: |

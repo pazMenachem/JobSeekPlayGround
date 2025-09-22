@@ -167,32 +167,71 @@ jobs:
   summary:
     name: "📋 Build Summary"
     runs-on: ubuntu-latest
-    needs: [test, security]  # Wait for both test and security jobs
-    if: always()  # Run even if previous jobs fail
+    needs: [test, security, docker]  # Wait for both test and security jobs
+    if: always()  # Run even if some jobs fail
     
     steps:
-    # Updated to actions/download-artifact@v4
     - name: 📥 Download all artifacts
       uses: actions/download-artifact@v4
+      continue-on-error: true  # Don't fail if no artifacts
       
-    - name: 📊 Generate build summary
+    - name: 📊 Generate pipeline summary
       run: |
-        echo "# 🚀 calculatorCICD Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "# 🚀 calculatorCICD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## 📊 Job Results" >> $GITHUB_STEP_SUMMARY
-        echo "- **Tests**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Security**: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **🧪 Tests & Quality**: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **🐳 Docker Build**: ${{ needs.docker.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **🚀 Release & Deploy**: ${{ needs.release.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **🐳 Docker Publish**: ${{ needs.docker-publish.result }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 📁 Artifacts Generated" >> $GITHUB_STEP_SUMMARY
+        
+        # Add status indicators
+        echo "## 🎯 Pipeline Status" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ needs.test.result }}" == "success" && "${{ needs.docker.result }}" == "success" ]]; then
+          echo "✅ **Core Pipeline**: All quality checks and Docker build passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Core Pipeline**: Some checks failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [[ "${{ needs.release.result }}" == "success" ]]; then
+          echo "🚀 **Release**: New version published" >> $GITHUB_STEP_SUMMARY
+        elif [[ "${{ needs.release.result }}" == "skipped" ]]; then
+          echo "⏭️ **Release**: No release needed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Release**: Release failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [[ "${{ needs.docker-publish.result }}" == "success" ]]; then
+          echo "🐳 **Docker**: Images tagged and ready" >> $GITHUB_STEP_SUMMARY
+        elif [[ "${{ needs.docker-publish.result }}" == "skipped" ]]; then
+          echo "⏭️ **Docker**: No publish needed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Docker**: Publish failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📁 Generated Artifacts" >> $GITHUB_STEP_SUMMARY
         echo "- Test results and coverage reports" >> $GITHUB_STEP_SUMMARY
-        echo "- Security scan reports" >> $GITHUB_STEP_SUMMARY
+        echo "- Python package builds (if released)" >> $GITHUB_STEP_SUMMARY
+        echo "- Docker images (tagged with version)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
-        echo "- Review test coverage in the artifacts" >> $GITHUB_STEP_SUMMARY
-        echo "- Check security reports for any issues" >> $GITHUB_STEP_SUMMARY
+        echo "## 🔄 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Review test coverage and quality metrics" >> $GITHUB_STEP_SUMMARY
+        echo "- Check release notes if new version was created" >> $GITHUB_STEP_SUMMARY
+        echo "- Verify Docker images are properly tagged" >> $GITHUB_STEP_SUMMARY
         
     - name: 📋 List all artifacts
       run: |
-        echo "Generated artifacts:"
-        find . -name "*.xml" -o -name "*.json" -o -name "*.html" | head -20
-
+        echo "📦 Pipeline Artifacts:"
+        find . -name "*.xml" -o -name "*.whl" -o -name "*.tar.gz" -o -name "*.json" | head -20 || echo "No artifacts found"
+        
+    - name: 🎯 Final Status
+      run: |
+        if [[ "${{ needs.test.result }}" == "success" && "${{ needs.docker.result }}" == "success" ]]; then
+          echo "🎉 Pipeline completed successfully!"
+          exit 0
+        else
+          echo "⚠️ Pipeline completed with issues - check job results above"
+          exit 1
+        fi

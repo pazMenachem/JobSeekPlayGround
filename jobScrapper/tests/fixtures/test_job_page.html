@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Job Board</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .job-listing { border: 1px solid #ddd; margin: 10px 0; padding: 15px; }
+        .job-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .job-company { color: #666; margin-bottom: 5px; }
+        .job-location { color: #888; }
+        .pagination { text-align: center; margin: 20px 0; }
+        .pagination a { margin: 0 5px; padding: 5px 10px; text-decoration: none; border: 1px solid #ddd; }
+        .pagination .current { background-color: #007bff; color: white; }
+        .next-page { background-color: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Job Listings</h1>
+    
+    <!-- Job Listings -->
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/python-developer-1" class="job-title-link">Senior Python Developer</a>
+        </div>
+        <div class="job-company">Tech Corp</div>
+        <div class="job-location">San Francisco, CA</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/software-engineer-2" class="job-title-link">Software Engineer</a>
+        </div>
+        <div class="job-company">StartupXYZ</div>
+        <div class="job-location">Remote</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/data-scientist-3" class="job-title-link">Data Scientist</a>
+        </div>
+        <div class="job-company">DataCorp</div>
+        <div class="job-location">New York, NY</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/frontend-developer-4" class="job-title-link">Frontend Developer</a>
+        </div>
+        <div class="job-company">WebSolutions</div>
+        <div class="job-location">Austin, TX</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/backend-engineer-5" class="job-title-link">Backend Engineer</a>
+        </div>
+        <div class="job-company">CloudTech</div>
+        <div class="job-location">Seattle, WA</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/fullstack-developer-6" class="job-title-link">Full Stack Developer</a>
+        </div>
+        <div class="job-company">FullStack Inc</div>
+        <div class="job-location">Boston, MA</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/devops-engineer-7" class="job-title-link">DevOps Engineer</a>
+        </div>
+        <div class="job-company">InfraCorp</div>
+        <div class="job-location">Denver, CO</div>
+    </div>
+    
+    <div class="job-listing">
+        <div class="job-title">
+            <a href="/jobs/machine-learning-engineer-8" class="job-title-link">Machine Learning Engineer</a>
+        </div>
+        <div class="job-company">AI Solutions</div>
+        <div class="job-location">Palo Alto, CA</div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination">
+        <a href="/jobs?page=1" class="prev-page">Previous</a>
+        <a href="/jobs?page=1" class="page-link">1</a>
+        <span class="current">2</span>
+        <a href="/jobs?page=3" class="page-link">3</a>
+        <a href="/jobs?page=4" class="page-link">4</a>
+        <a href="/jobs?page=3" class="next-page" aria-label="Next">Next</a>
+    </div>
+    
+    <!-- Alternative pagination selectors for testing -->
+    <div class="pagination-alt" style="display: none;">
+        <a href="/jobs?page=3" class="next" aria-label="next">Next Page</a>
+    </div>
+    
+    <div class="pagination-alt2" style="display: none;">
+        <button onclick="nextPage()" class="next-button">Next</button>
+    </div>
+</body>
+</html>

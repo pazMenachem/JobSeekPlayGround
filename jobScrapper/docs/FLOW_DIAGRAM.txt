@@ -1,0 +1,204 @@
+JOB SCRAPER APPLICATION FLOW
+============================
+
+START
+  │
+  ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    INSTALLATION                             │
+│  python install.py                                          │
+│  ├── Create virtual environment (venv)                      │
+│  ├── Install requirements (selenium, webdriver-manager)     │
+│  └── Setup scripts (activate.bat, run.bat)                 │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    CONFIGURATION                            │
+│  config.py                                                  │
+│  ├── Keywords: ["python", "developer", "remote"]            │
+│  ├── URLs: ["indeed.com", "linkedin.com"]                   │
+│  ├── Browser: Chrome/Firefox/Edge                           │
+│  └── Selectors: CSS selectors for job titles                │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    APPLICATION START                         │
+│  python main.py OR run.bat                                  │
+│  ├── Setup logging                                          │
+│  ├── Initialize WebDriverManager                            │
+│  └── Start scraping process                                  │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    BROWSER SETUP                             │
+│  WebDriverManager                                           │
+│  ├── Create Chrome/Firefox/Edge browser                     │
+│  ├── Configure options (headless, window size)              │
+│  ├── Set timeouts and waits                                │
+│  └── Maximize window                                        │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    URL PROCESSING                           │
+│  For each URL in urls_to_scrape:                           │
+│  ├── Navigate to URL                                       │
+│  ├── Wait for page to load                                 │
+│  └── Start page processing                                  │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    PAGE PROCESSING                          │
+│  For each page (current + pagination):                     │
+│  ├── Scroll page to load content                            │
+│  ├── Find job title elements                               │
+│  ├── Check keywords in job titles                           │
+│  ├── Click matching jobs                                    │
+│  ├── Save job URLs                                          │
+│  └── Try next page                                          │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    JOB SCRAPING                             │
+│  JobScraper.find_jobs_with_keywords()                      │
+│  ├── Scroll page to load more content                       │
+│  ├── Find job elements using CSS selectors                 │
+│  ├── Extract job titles and URLs                            │
+│  ├── Check if title contains keywords                       │
+│  ├── Click on matching job (visit job page)               │
+│  ├── Wait and return to listing                             │
+│  └── Collect job URL                                        │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    PAGINATION                               │
+│  URLManager.go_to_next_page()                              │
+│  ├── Find next page button/link                             │
+│  ├── Check if next page exists                              │
+│  ├── Click next page button                                 │
+│  ├── Wait for new page to load                             │
+│  └── Continue with page processing                          │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    RESULTS COLLECTION                       │
+│  ResultsManager                                            │
+│  ├── Collect all found job URLs                             │
+│  ├── Remove duplicates                                      │
+│  ├── Add metadata (timestamp, source)                       │
+│  └── Save in multiple formats                               │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    OUTPUT GENERATION                        │
+│  Save results in multiple formats:                         │
+│  ├── JSON: jobs_20240115_103000.json                       │
+│  ├── TXT:  jobs_20240115_103000.txt                        │
+│  └── CSV:  jobs_20240115_103000.csv                        │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    CLEANUP & FINISH                          │
+│  ├── Close browser                                          │
+│  ├── Generate summary report                                │
+│  ├── Log completion status                                  │
+│  └── Exit application                                       │
+└─────────────────────────────────────────────────────────────┘
+
+COMPONENT INTERACTIONS
+=====================
+
+main.py
+├── WebDriverManager (browser setup)
+│   ├── Create WebDriver
+│   ├── Configure options
+│   └── Handle cleanup
+│
+├── JobScraper (core scraping)
+│   ├── Find job elements
+│   ├── Check keywords
+│   ├── Click jobs
+│   └── Collect URLs
+│
+├── URLManager (navigation)
+│   ├── Navigate to URLs
+│   ├── Handle pagination
+│   └── Track progress
+│
+└── ResultsManager (output)
+    ├── Collect results
+    ├── Remove duplicates
+    └── Save files
+
+DATA FLOW
+=========
+
+URLs → URLManager → JobScraper → ResultsManager → Output Files
+  │         │           │            │
+  │         │           │            ├── jobs_YYYYMMDD_HHMMSS.json
+  │         │           │            ├── jobs_YYYYMMDD_HHMMSS.txt
+  │         │           │            └── jobs_YYYYMMDD_HHMMSS.csv
+  │         │           │
+  │         │           └── Found Job URLs
+  │         │
+  │         └── Page Navigation
+  │
+  └── Target Job Sites
+
+KEY DECISION POINTS
+==================
+
+1. Browser Selection:
+   config.py → BROWSER_TYPE → WebDriverManager
+   ├── "chrome" → Chrome WebDriver
+   ├── "firefox" → Firefox WebDriver
+   └── "edge" → Edge WebDriver
+
+2. Job Matching Logic:
+   Job Title → Keyword Check → Action
+   ├── Contains keyword → Click job → Save URL
+   └── No match → Skip job → Continue
+
+3. Pagination Logic:
+   Current Page → Check for Next → Action
+   ├── Next page exists → Navigate → Continue scraping
+   └── No next page → Move to next URL
+
+4. Error Handling:
+   Error Occurs → Log Error → Action
+   ├── Recoverable → Retry → Continue
+   └── Fatal → Log → Exit gracefully
+
+PERFORMANCE CONSIDERATIONS
+=========================
+
+Timing Controls:
+- Page Load Timeout: 30 seconds max per page
+- Implicit Wait: 10 seconds for elements
+- Scroll Pause: 2 seconds between scrolls
+- Click Delay: 1-2 seconds between actions
+
+Resource Management:
+- Virtual Environment: Isolated dependencies
+- Browser Cleanup: Automatic driver cleanup
+- Memory Management: Clear results between URLs
+- Log Rotation: Automatic log file management
+
+CONFIGURATION FLOW
+==================
+
+User Edits → config.py → Application Settings
+├── Browser settings
+├── Scraping parameters
+├── Job site selectors
+├── Keywords to search
+└── Output preferences

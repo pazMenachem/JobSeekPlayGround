@@ -2,13 +2,13 @@
 
 import logging
 import time
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, Tuple
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from src.config import NEXT_PAGE_SELECTORS, MAX_PAGES_PER_URL
+from selenium.common.exceptions import TimeoutException
+from src.config import MAX_PAGES_PER_URL
 
 
 class URLManager:
@@ -65,28 +65,70 @@ class URLManager:
             True if successfully moved to next page, False if no next page available.
         """
         try:
+            # Check if we've reached the maximum pages limit
+            if self.current_page >= MAX_PAGES_PER_URL:
+                self.logger.info(f"Reached maximum pages limit ({MAX_PAGES_PER_URL})")
+                return False
+            
             next_page_element = self._find_next_page_element()
             
             if next_page_element is None:
                 self.logger.info("No next page found")
                 return False
             
-            # Check if we've reached the maximum pages limit
-            if self.current_page >= MAX_PAGES_PER_URL:
-                self.logger.info(f"Reached maximum pages limit ({MAX_PAGES_PER_URL})")
-                return False
+            # Get current URL before clicking
+            current_url = self.driver.current_url
+            self.logger.info(f"Attempting to navigate from page {self.current_page} to next page")
             
-            # Click on next page
+            # Scroll to element and wait
             self.driver.execute_script("arguments[0].scrollIntoView(true);", next_page_element)
-            time.sleep(1)
+            time.sleep(2)  # Give more time for dynamic content
             
+            # Try different click methods
+            click_success = False
+            
+            # Method 1: Regular click
             try:
                 next_page_element.click()
-            except Exception:
-                # If regular click fails, try JavaScript click
-                self.driver.execute_script("arguments[0].click();", next_page_element)
+                click_success = True
+                self.logger.debug("Regular click succeeded")
+            except Exception as e:
+                self.logger.debug(f"Regular click failed: {str(e)[:50]}...")
             
-            # Wait for page to load
+            # Method 2: JavaScript click
+            if not click_success:
+                try:
+                    self.driver.execute_script("arguments[0].click();", next_page_element)
+                    click_success = True
+                    self.logger.debug("JavaScript click succeeded")
+                except Exception as e:
+                    self.logger.debug(f"JavaScript click failed: {str(e)[:50]}...")
+            
+            # Method 3: ActionChains click
+            if not click_success:
+                try:
+                    from selenium.webdriver.common.action_chains import ActionChains
+                    ActionChains(self.driver).move_to_element(next_page_element).click().perform()
+                    click_success = True
+                    self.logger.debug("ActionChains click succeeded")
+                except Exception as e:
+                    self.logger.debug(f"ActionChains click failed: {str(e)[:50]}...")
+            
+            if not click_success:
+                self.logger.warning("All click methods failed")
+                return False
+            
+            # Wait for page to load and URL to change
+            try:
+                WebDriverWait(self.driver, 15).until(
+                    lambda driver: driver.current_url != current_url
+                )
+                self.logger.info(f"URL changed from {current_url} to {self.driver.current_url}")
+            except TimeoutException:
+                # Sometimes the URL doesn't change but content does (AJAX)
+                self.logger.info("URL didn't change, but page content may have updated")
+            
+            # Wait for page to be ready
             WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
@@ -108,53 +150,84 @@ class URLManager:
         Returns:
             WebElement for next page button if found, None otherwise.
         """
-        for selector in NEXT_PAGE_SELECTORS:
+        self.logger.info("Searching for next page element...")
+        
+        # Quick check: try the most common selectors first (fastest)
+        quick_selectors = [
+            "a[aria-label='Next']",
+            "a[aria-label='next']", 
+            ".next-page",
+            ".pagination .next",
+            "a:contains('Next')",
+            "a:contains('>')"
+        ]
+        
+        for selector in quick_selectors:
             try:
                 elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                 if elements:
-                    # Check if the element is clickable and not disabled
                     for element in elements:
-                        if element.is_displayed() and element.is_enabled():
-                            self.logger.info(f"Found next page element with selector: {selector}")
-                            return element
-            except Exception as e:
-                self.logger.debug(f"Selector {selector} failed: {str(e)[:50]}...")
+                        try:
+                            if element.is_displayed() and element.is_enabled():
+                                self.logger.info(f"Found next page element with quick selector: {selector}")
+                                return element
+                        except Exception:
+                            continue
+            except Exception:
                 continue
         
-        # Try to find next page by text content
+        # If quick selectors fail, try XPath for text-based search (faster than complex CSS)
         try:
-            next_links = self.driver.find_elements(By.XPATH, "//a[contains(text(), 'Next') or contains(text(), '>') or contains(text(), '→')]")
-            for link in next_links:
-                if link.is_displayed() and link.is_enabled():
-                    self.logger.info("Found next page element by text content")
-                    return link
-        except Exception as e:
-            self.logger.debug(f"Text-based search failed: {str(e)[:50]}...")
+            xpath_queries = [
+                "//a[contains(text(), 'Next')]",
+                "//a[contains(text(), '>')]",
+                "//button[contains(text(), 'Next')]"
+            ]
+            
+            for xpath in xpath_queries:
+                try:
+                    elements = self.driver.find_elements(By.XPATH, xpath)
+                    if elements:
+                        for element in elements:
+                            try:
+                                if element.is_displayed() and element.is_enabled():
+                                    self.logger.info(f"Found next page element with XPath: {xpath}")
+                                    return element
+                            except Exception:
+                                continue
+                except Exception:
+                    continue
+        except Exception:
+            pass
         
+        # Last resort: try remaining CSS selectors (but limit to 5 most likely)
+        fallback_selectors = [
+            ".pagination-next",
+            ".next",
+            "[data-testid='pagination-next']",
+            "button[aria-label='Next']",
+            ".pagination a:last-child"
+        ]
+        
+        for selector in fallback_selectors:
+            try:
+                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                if elements:
+                    for element in elements:
+                        try:
+                            if element.is_displayed() and element.is_enabled():
+                                self.logger.info(f"Found next page element with fallback selector: {selector}")
+                                return element
+                        except Exception:
+                            continue
+            except Exception:
+                continue
+        
+        self.logger.warning("No next page element found")
         return None
     
-    def has_next_page(self) -> bool:
-        """Check if there is a next page available.
-        
-        Returns:
-            True if next page is available, False otherwise.
-        """
-        return self._find_next_page_element() is not None
     
-    def get_current_page_number(self) -> int:
-        """Get the current page number.
-        
-        Returns:
-            Current page number.
-        """
-        return self.current_page
-    
-    def reset_pagination(self) -> None:
-        """Reset pagination state."""
-        self.current_page = 1
-        self.logger.info("Pagination state reset")
-    
-    def process_urls(self, urls: List[str], scraper_callback: Callable[[], List[str]]) -> List[str]:
+    def process_urls(self, urls: List[str], scraper_callback: Callable[[], List[Tuple[str, str]]]) -> List[Tuple[str, str]]:
         """Process multiple URLs with pagination.
         
         Args:
@@ -162,7 +235,7 @@ class URLManager:
             scraper_callback: Function to call for each page (should accept no arguments).
             
         Returns:
-            List of all found job URLs.
+            List of all found job tuples (url, title).
         """
         all_found_jobs = []
         
@@ -189,6 +262,6 @@ class URLManager:
                     self.logger.error(f"Error processing page: {str(e)[:100]}...")
                     break
             
-            self.logger.info(f"Completed processing {url}, found {len([job for job in all_found_jobs if url in job])} jobs")
+            self.logger.info(f"Completed processing {url}, found {len([job for job in all_found_jobs if url in job[0]])} jobs")
         
         return all_found_jobs

@@ -4,7 +4,7 @@ import logging
 import json
 import os
 from datetime import datetime
-from typing import List, Set, Dict, Any
+from typing import List, Set, Dict, Any, Tuple
 from pathlib import Path
 from src.config import OUTPUT_FILE
 
@@ -28,6 +28,8 @@ class ResultsManager:
         self.results_data: List[Dict[str, Any]] = []
         self.run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.results_dir = self._create_results_directory()
+        self.start_time = datetime.now()
+        self.end_time = None
     
     def _create_results_directory(self) -> Path:
         """Create a timestamped results directory for this run.
@@ -44,34 +46,31 @@ class ResultsManager:
         self.logger.info(f"Created results directory: {run_dir}")
         return run_dir
     
-    def add_job_url(self, url: str, title: str = "", source_url: str = "") -> None:
+    def add_job_url(self, url: str, title: str = "") -> None:
         """Add a job URL to the results.
         
         Args:
             url: URL of the job listing.
             title: Title of the job (optional).
-            source_url: URL of the page where this job was found (optional).
         """
         if url not in self.found_jobs:
             self.found_jobs.add(url)
             job_data = {
                 "url": url,
                 "title": title,
-                "source_url": source_url,
                 "found_at": datetime.now().isoformat()
             }
             self.results_data.append(job_data)
-            self.logger.info(f"Added job URL: {url}")
+            self.logger.info(f"Added job URL: {url} with title: {title[:50]}...")
     
-    def add_job_urls(self, urls: List[str], source_url: str = "") -> None:
+    def add_job_urls(self, jobs: List[Tuple[str, str]]) -> None:
         """Add multiple job URLs to the results.
         
         Args:
-            urls: List of job URLs to add.
-            source_url: URL of the page where these jobs were found (optional).
+            jobs: List of tuples containing (job_url, job_title).
         """
-        for url in urls:
-            self.add_job_url(url, source_url=source_url)
+        for url, title in jobs:
+            self.add_job_url(url, title)
     
     def save_results(self, format_type: str = "txt") -> str:
         """Save results to file in specified format.
@@ -112,11 +111,8 @@ class ResultsManager:
             f.write(f"Total jobs found: {len(self.found_jobs)}\n\n")
             
             for i, job_data in enumerate(self.results_data, 1):
-                f.write(f"{i}. {job_data['url']}\n")
-                if job_data.get('title'):
-                    f.write(f"   Title: {job_data['title']}\n")
-                if job_data.get('source_url'):
-                    f.write(f"   Source: {job_data['source_url']}\n")
+                f.write(f"{i}. {job_data['title']}\n")
+                f.write(f"   URL: {job_data['url']}\n")
                 f.write(f"   Found at: {job_data['found_at']}\n\n")
         
         self.logger.info(f"Results saved to: {filepath}")
@@ -159,34 +155,55 @@ class ResultsManager:
         
         with open(filepath, 'w', newline='', encoding='utf-8') as f:
             if self.results_data:
-                writer = csv.DictWriter(f, fieldnames=['url', 'title', 'source_url', 'found_at'])
+                writer = csv.DictWriter(f, fieldnames=['url', 'title', 'found_at'])
                 writer.writeheader()
                 writer.writerows(self.results_data)
         
         self.logger.info(f"Results saved to: {filepath}")
         return str(filepath)
     
-    def save_run_summary(self) -> str:
+    def save_run_summary(self, target_urls: List[str] = None) -> str:
         """Save a summary file for this run.
         
+        Args:
+            target_urls: List of URLs that were scraped.
+            
         Returns:
             Path to the saved summary file.
         """
         summary_file = self.results_dir / "run_summary.txt"
         
+        # Calculate execution time
+        if self.end_time:
+            execution_time = self.end_time - self.start_time
+            execution_time_str = str(execution_time).split('.')[0]  # Remove microseconds
+        else:
+            execution_time_str = "Not completed"
+        
         with open(summary_file, 'w', encoding='utf-8') as f:
             f.write(f"Job Scraper Run Summary\n")
             f.write("=" * 30 + "\n\n")
             f.write(f"Run Timestamp: {self.run_timestamp}\n")
+            f.write(f"Execution Time: {execution_time_str}\n")
             f.write(f"Total Jobs Found: {len(self.found_jobs)}\n")
             f.write(f"Unique URLs: {len(self.found_jobs)}\n")
             f.write(f"Run Directory: {self.results_dir}\n\n")
             
-            if self.found_jobs:
-                f.write("Found Job URLs:\n")
-                f.write("-" * 20 + "\n")
-                for i, url in enumerate(self.found_jobs, 1):
+            # Add target URLs section
+            if target_urls:
+                f.write("Target URLs Scraped:\n")
+                f.write("-" * 25 + "\n")
+                for i, url in enumerate(target_urls, 1):
                     f.write(f"{i}. {url}\n")
+                f.write("\n")
+            
+            if self.found_jobs:
+                f.write("Found Jobs:\n")
+                f.write("-" * 15 + "\n")
+                for i, job_data in enumerate(self.results_data, 1):
+                    f.write(f"{i}. {job_data['title']}\n")
+                    f.write(f"   URL: {job_data['url']}\n")
+                    f.write(f"   Found at: {job_data['found_at']}\n\n")
             else:
                 f.write("No jobs found in this run.\n")
         
@@ -211,6 +228,11 @@ class ResultsManager:
         self.found_jobs.clear()
         self.results_data.clear()
         self.logger.info("Results cleared")
+    
+    def mark_end_time(self) -> None:
+        """Mark the end time of the scraping run."""
+        self.end_time = datetime.now()
+        self.logger.info(f"Run completed at: {self.end_time}")
     
     def load_results_from_file(self, filepath: str) -> bool:
         """Load results from a previously saved file.
@@ -252,8 +274,7 @@ class ResultsManager:
             for job in data['jobs']:
                 self.add_job_url(
                     job.get('url', ''),
-                    job.get('title', ''),
-                    job.get('source_url', '')
+                    job.get('title', '')
                 )
         
         return True

@@ -61,7 +61,7 @@ class TestIntegration:
         
         # Should find matching jobs
         assert len(found_urls) > 0
-        assert "https://example.com/job1" in found_urls
+        assert any("https://example.com/job1" in job[0] for job in found_urls)
     
     def _create_mock_element(self, text: str, href: str) -> Mock:
         """Create a mock element for testing."""

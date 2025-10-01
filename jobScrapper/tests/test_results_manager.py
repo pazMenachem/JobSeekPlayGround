@@ -36,15 +36,13 @@ class TestResultsManager:
         """Test adding a single job URL."""
         url = "https://example.com/job1"
         title = "Test Job"
-        source_url = "https://example.com/jobs"
         
-        results_manager.add_job_url(url, title, source_url)
+        results_manager.add_job_url(url, title)
         
         assert url in results_manager.found_jobs
         assert len(results_manager.results_data) == 1
         assert results_manager.results_data[0]["url"] == url
         assert results_manager.results_data[0]["title"] == title
-        assert results_manager.results_data[0]["source_url"] == source_url
         assert "found_at" in results_manager.results_data[0]
     
     @pytest.mark.unit
@@ -61,18 +59,17 @@ class TestResultsManager:
     @pytest.mark.unit
     def test_add_job_urls_multiple(self, results_manager):
         """Test adding multiple job URLs."""
-        urls = [
-            "https://example.com/job1",
-            "https://example.com/job2",
-            "https://example.com/job3"
+        jobs = [
+            ("https://example.com/job1", "Job 1"),
+            ("https://example.com/job2", "Job 2"),
+            ("https://example.com/job3", "Job 3")
         ]
-        source_url = "https://example.com/jobs"
         
-        results_manager.add_job_urls(urls, source_url)
+        results_manager.add_job_urls(jobs)
         
         assert len(results_manager.found_jobs) == 3
         assert len(results_manager.results_data) == 3
-        for url in urls:
+        for url, title in jobs:
             assert url in results_manager.found_jobs
     
     @pytest.mark.unit
@@ -190,7 +187,7 @@ class TestResultsManager:
         """Test clearing results."""
         # Add some test data
         results_manager.add_job_url("https://example.com/job1", "Test Job 1")
-        results_manager.add_job_urls(["https://example.com/job2"])
+        results_manager.add_job_urls([("https://example.com/job2", "Test Job 2")])
         
         assert len(results_manager.found_jobs) == 2
         assert len(results_manager.results_data) == 2
@@ -209,13 +206,11 @@ class TestResultsManager:
                 {
                     "url": "https://example.com/job1",
                     "title": "Test Job 1",
-                    "source_url": "https://example.com/jobs",
                     "found_at": "2025-01-01T12:00:00"
                 },
                 {
                     "url": "https://example.com/job2",
                     "title": "Test Job 2",
-                    "source_url": "https://example.com/jobs",
                     "found_at": "2025-01-01T12:01:00"
                 }
             ]

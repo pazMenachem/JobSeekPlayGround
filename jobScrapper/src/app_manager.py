@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 from src.job_scraper import JobScraper
 from src.browser_manager import WebDriverManager
 from src.url_manager import URLManager
@@ -36,13 +36,20 @@ class AppManager:
         # Ensure logs directory exists
         os.makedirs("logs", exist_ok=True)
         
+        # Create handlers
+        handlers = [logging.StreamHandler(sys.stdout)]
+        
+        # Only add file handler if the log file can be created
+        try:
+            file_handler = logging.FileHandler(log_file)
+            handlers.append(file_handler)
+        except (OSError, IOError) as e:
+            self.logger.warning(f"Could not create log file {log_file}: {e}")
+        
         logging.basicConfig(
             level=getattr(logging, LOG_LEVEL.upper()),
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(sys.stdout),
-                logging.FileHandler(log_file)
-            ]
+            handlers=handlers
         )
         
         # Disable verbose logging from external libraries
@@ -87,8 +94,9 @@ class AppManager:
             # Save results
             self._save_results(all_found_jobs)
             
-            # Save run summary
-            self.results_manager.save_run_summary()
+            # Mark end time and save run summary
+            self.results_manager.mark_end_time()
+            self.results_manager.save_run_summary(urls_to_scrape)
             
             # Print summary
             self._print_summary()
@@ -99,11 +107,11 @@ class AppManager:
             self.logger.error(f"An error occurred during scraping: {e}")
             raise
     
-    def _save_results(self, found_jobs: List[str]) -> None:
+    def _save_results(self, found_jobs: List[Tuple[str, str]]) -> None:
         """Save scraping results to files.
         
         Args:
-            found_jobs: List of found job URLs.
+            found_jobs: List of found job tuples (url, title).
         """
         if found_jobs:
             json_file = self.results_manager.save_results("json")

@@ -1,10 +1,10 @@
 """Example usage of the job scraper application."""
 
 import logging
-from webdriver_manager import WebDriverManager
-from job_scraper import JobScraper
-from url_manager import URLManager
-from results_manager import ResultsManager
+from src.browser_manager import WebDriverManager
+from src.job_scraper import JobScraper
+from src.url_manager import URLManager
+from src.results_manager import ResultsManager
 
 
 def example_basic_usage():

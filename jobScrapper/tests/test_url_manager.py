@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 
 from src.url_manager import URLManager
 
@@ -80,33 +80,6 @@ class TestURLManager:
         
         assert result is False
     
-    @pytest.mark.unit
-    def test_has_next_page_true(self, url_manager, mock_driver, mock_next_page_element):
-        """Test detecting next page when it exists."""
-        mock_driver.find_elements.return_value = [mock_next_page_element]
-        
-        result = url_manager.has_next_page()
-        
-        assert result is True
-        mock_driver.find_elements.assert_called()
-    
-    @pytest.mark.unit
-    def test_has_next_page_false(self, url_manager, mock_driver):
-        """Test detecting next page when it doesn't exist."""
-        mock_driver.find_elements.return_value = []
-        
-        result = url_manager.has_next_page()
-        
-        assert result is False
-    
-    @pytest.mark.unit
-    def test_has_next_page_exception(self, url_manager, mock_driver):
-        """Test detecting next page when exception occurs."""
-        mock_driver.find_elements.side_effect = Exception("Test exception")
-        
-        result = url_manager.has_next_page()
-        
-        assert result is False
     
     @pytest.mark.unit
     def test_go_to_next_page_success(self, url_manager, mock_driver, mock_next_page_element):
@@ -134,6 +107,8 @@ class TestURLManager:
         """Test navigation to next page when click fails."""
         mock_driver.find_elements.return_value = [mock_next_page_element]
         mock_next_page_element.click.side_effect = Exception("Click failed")
+        # Mock execute_script to also fail
+        mock_driver.execute_script.side_effect = Exception("JavaScript click failed")
         
         with patch('src.url_manager.WebDriverWait') as mock_wait:
             mock_wait.return_value.until.return_value = True
@@ -188,7 +163,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=["https://example.com/job1", "https://example.com/job2"])
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls([url], mock_scraper_func)
@@ -204,7 +179,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=["https://example.com/job1"])
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls(sample_urls, mock_scraper_func)
@@ -248,7 +223,7 @@ class TestURLManager:
         mock_scraper_func = Mock(side_effect=Exception("Scraper failed"))
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls([url], mock_scraper_func)
@@ -263,7 +238,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=["https://example.com/job1"])
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=True):
+            with patch.object(url_manager, 'go_to_next_page', return_value=True):
                 with patch.object(url_manager, 'go_to_next_page', return_value=False):
                     with patch('src.url_manager.WebDriverWait') as mock_wait:
                         mock_wait.return_value.until.return_value = True
@@ -289,7 +264,7 @@ class TestURLManager:
         url = sample_urls[0]
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls([url], None)
@@ -303,7 +278,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=None)
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls([url], mock_scraper_func)
@@ -317,7 +292,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=[])
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls([url], mock_scraper_func)
@@ -331,7 +306,7 @@ class TestURLManager:
         mock_scraper_func = Mock(return_value=["https://example.com/job1"])
         
         with patch.object(url_manager, 'navigate_to_url', return_value=True):
-            with patch.object(url_manager, 'has_next_page', return_value=False):
+            with patch.object(url_manager, 'go_to_next_page', return_value=False):
                 with patch('src.url_manager.WebDriverWait') as mock_wait:
                     mock_wait.return_value.until.return_value = True
                     result = url_manager.process_urls(urls, mock_scraper_func)

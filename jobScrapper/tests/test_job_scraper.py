@@ -3,9 +3,7 @@
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 
 from src.job_scraper import JobScraper
 
@@ -117,7 +115,8 @@ class TestJobScraper:
         elements = job_scraper._find_job_elements()
         
         assert len(elements) == len(mock_job_elements)
-        mock_driver.find_elements.assert_called_once()
+        # The method now tries multiple selectors, so we expect multiple calls
+        assert mock_driver.find_elements.call_count >= 1
     
     @pytest.mark.unit
     def test_find_job_elements_no_elements(self, job_scraper, mock_driver):

@@ -22,13 +22,17 @@ class WebDriverManager:
     for different browsers (Chrome, Firefox, Edge) with proper setup and cleanup.
     """
     
-    def __init__(self, browser_type: str = BROWSER_TYPE) -> None:
+    def __init__(self, browser: str = BROWSER_TYPE, headless: bool = HEADLESS_MODE, options: Optional[ChromeOptions | FirefoxOptions | EdgeOptions] = None) -> None:
         """Initialize the WebDriver manager.
         
         Args:
-            browser_type: Type of browser to use ('chrome', 'firefox', 'edge').
+            browser: Type of browser to use ('chrome', 'firefox', 'edge').
+            headless: Whether to run browser in headless mode.
+            options: Custom browser options to use.
         """
-        self.browser_type = browser_type.lower()
+        self.browser = browser.lower()
+        self.headless = headless
+        self.options = options
         self.driver: Optional[webdriver.Chrome | webdriver.Firefox | webdriver.Edge] = None
         self.logger = logging.getLogger(__name__)
     
@@ -42,7 +46,7 @@ class WebDriverManager:
             ValueError: If unsupported browser type is specified.
         """
         try:
-            match self.browser_type:
+            match self.browser:
                 case "chrome":
                     return self._create_chrome_driver()
                 case "firefox":
@@ -50,10 +54,10 @@ class WebDriverManager:
                 case "edge":
                     return self._create_edge_driver()
                 case _:
-                    raise ValueError(f"Unsupported browser type: {self.browser_type}")
+                    raise ValueError(f"Unsupported browser type: {self.browser}")
 
         except Exception as e:
-            self.logger.error(f"Failed to create {self.browser_type} driver: {e}")
+            self.logger.error(f"Failed to create {self.browser} driver: {e}")
             raise
     
     def _create_chrome_driver(self) -> webdriver.Chrome:
@@ -62,8 +66,8 @@ class WebDriverManager:
         Returns:
             Configured Chrome WebDriver instance.
         """
-        options = ChromeOptions()
-        if HEADLESS_MODE:
+        options = self.options if self.options else ChromeOptions()
+        if self.headless:
             options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -81,8 +85,8 @@ class WebDriverManager:
         Returns:
             Configured Firefox WebDriver instance.
         """
-        options = FirefoxOptions()
-        if HEADLESS_MODE:
+        options = self.options if self.options else FirefoxOptions()
+        if self.headless:
             options.add_argument("--headless")
         
         service = FirefoxService(GeckoDriverManager().install())
@@ -96,8 +100,8 @@ class WebDriverManager:
         Returns:
             Configured Edge WebDriver instance.
         """
-        options = EdgeOptions()
-        if HEADLESS_MODE:
+        options = self.options if self.options else EdgeOptions()
+        if self.headless:
             options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -145,3 +149,50 @@ class WebDriverManager:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.quit_driver()
+    
+    def _get_chrome_options(self) -> ChromeOptions:
+        """Get Chrome options with current settings.
+        
+        Returns:
+            Configured Chrome options.
+        """
+        options = self.options if self.options else ChromeOptions()
+        if self.headless:
+            options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1080")
+        return options
+    
+    def _get_firefox_options(self) -> FirefoxOptions:
+        """Get Firefox options with current settings.
+        
+        Returns:
+            Configured Firefox options.
+        """
+        options = self.options if self.options else FirefoxOptions()
+        if self.headless:
+            options.add_argument("--headless")
+        return options
+    
+    def _get_edge_options(self) -> EdgeOptions:
+        """Get Edge options with current settings.
+        
+        Returns:
+            Configured Edge options.
+        """
+        options = self.options if self.options else EdgeOptions()
+        if self.headless:
+            options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        return options
+    
+    def _get_driver(self) -> webdriver.Chrome | webdriver.Firefox | webdriver.Edge:
+        """Get or create a WebDriver instance (alias for get_driver).
+        
+        Returns:
+            WebDriver instance.
+        """
+        return self.get_driver()

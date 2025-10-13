@@ -1,4 +1,4 @@
-"""WebDriver management for browser automation."""
+"""Browser driver for automation."""
 
 import logging
 from typing import Optional
@@ -9,18 +9,22 @@ from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from src.config_manager.config import BROWSER_TYPE, HEADLESS_MODE, IMPLICIT_WAIT, PAGE_LOAD_TIMEOUT
+from src.config import browser_settings
 
 
-class WebDriverManager:
-    """Manages WebDriver instances for browser automation.
+class BrowserDriver:
+    """Browser driver for automation.
     
-    This class handles the creation and configuration of WebDriver instances
-    for Chrome and Firefox browsers with proper setup and cleanup.
+    Creates and configures WebDriver instances for Chrome and Firefox browsers.
     """
     
-    def __init__(self, browser: str = BROWSER_TYPE, headless: bool = HEADLESS_MODE, options: Optional[ChromeOptions | FirefoxOptions] = None) -> None:
-        """Initialize the WebDriver manager.
+    def __init__(
+        self, 
+        browser: str = browser_settings.browser_type, 
+        headless: bool = browser_settings.headless_mode, 
+        options: Optional[ChromeOptions | FirefoxOptions] = None
+        ) -> None:
+        """Initialize the browser driver.
         
         Args:
             browser: Type of browser to use ('chrome', 'firefox').
@@ -93,8 +97,8 @@ class WebDriverManager:
         Args:
             driver: WebDriver instance to configure.
         """
-        driver.implicitly_wait(IMPLICIT_WAIT)
-        driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
+        driver.implicitly_wait(browser_settings.implicit_wait)
+        driver.set_page_load_timeout(browser_settings.page_load_timeout)
         driver.maximize_window()
     
     def __enter__(self) -> webdriver.Chrome | webdriver.Firefox:

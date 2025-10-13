@@ -2,7 +2,7 @@
 
 from .job_crawler_manager import JobCrawlerManager
 from .job_scraper import JobScraper
-from .browser_manager import WebDriverManager
-from .url_manager import URLManager
+from .browser_driver import BrowserDriver
+from .page_navigator import PageNavigator
 
-__all__ = ['JobCrawlerManager', 'JobScraper', 'WebDriverManager', 'URLManager']
+__all__ = ['JobCrawlerManager', 'JobScraper', 'BrowserDriver', 'PageNavigator']

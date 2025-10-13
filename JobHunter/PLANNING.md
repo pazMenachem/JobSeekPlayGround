@@ -186,21 +186,44 @@ class MessageData:
 
 ### Phase 3: Create New Components
 
-#### Step 3.1: Create JobFilter Package
-- [x] Create `src/job_filter/__init__.py`
-- [ ] Create `src/job_filter/ollama_client.py` - Ollama API client
-- [ ] Create `src/job_filter/relevance_analyzer.py` - Analyze job relevance
-- [ ] Create `src/job_filter/prompt_templates.py` - LLM prompt templates
-- [ ] Test JobFilter imports
+#### Step 3.1: Create LLM Communication Package with Gemini Flash ✅ COMPLETED
+- [x] Create `src/llm_communication/__init__.py`
+- [x] Create `src/llm_communication/llm_interface.py` - Abstract LLM interface
+- [x] Create `src/llm_communication/gemini_provider.py` - Gemini Flash API client
+  - [x] Implement `is_available()` - Check API connectivity
+  - [x] Implement `send_to_llm()` - Async API call with executor
+- [x] Create `src/llm_communication/llm_communicator.py` - LLM communication manager
+  - [x] Implement `update_job_status()` - Batch job analysis
+  - [x] Implement `_parse_batch_response()` - JSON response parsing
+- [x] Create `src/llm_communication/prompt_formatter.py` - Batch prompt formatting
+- [x] Implement structured JSON output schema:
+  ```json
+  {
+    "jobs": [
+      {"index": 0, "relevant": "yes", "reason": "matches criteria"},
+      {"index": 1, "relevant": "no", "reason": "not related"}
+    ]
+  }
+  ```
+- [x] Update JobData model with `relevant` and `reason` attributes
+- [x] Test LLM communication with Gemini API
+- [x] Add error handling for batch failures
 
-#### Step 3.2: Create MessageFormatter Package
+#### Step 3.2: Create Job Filter Package ✅ COMPLETED
+- [x] Create `src/message_formatter/job_filter.py` - Job filtering logic
+  - [x] Implement `filter_jobs()` - Filter based on relevance status
+  - [x] Implement `_should_include_job()` - Filter level logic (yes/maybe/no/all)
+- [x] Update FilteredJobs data model
+- [x] Test JobFilter with different filter levels
+
+#### Step 3.3: Create MessageFormatter Package
 - [x] Create `src/message_formatter/__init__.py`
 - [ ] Create `src/message_formatter/formatter.py` - Format job data
 - [ ] Create `src/message_formatter/template_engine.py` - Message templates
 - [ ] Create `src/message_formatter/sanitizer.py` - Remove sensitive data
 - [ ] Test MessageFormatter imports
 
-#### Step 3.3: Create NotificationService Package
+#### Step 3.4: Create NotificationService Package
 - [x] Create `src/notification_service/__init__.py`
 - [ ] Create `src/notification_service/gmail_sender.py` - Gmail integration
 - [ ] Create `src/notification_service/telegram_sender.py` - Telegram integration
@@ -252,11 +275,43 @@ class MessageData:
 
 ## Technical Specifications
 
+### Gemini Flash API Integration
+
+#### Batch Processing Strategy
+Instead of making one API request per job (100 jobs = 100 requests), we use **batch processing**:
+- **Single Request**: All jobs analyzed in one API call
+- **Structured Output**: JSON format for reliable parsing
+- **Rate Limit Solution**: 1 request instead of 100 (no 15 RPM limit issue)
+- **Token Efficiency**: ~30,000 tokens for 100 jobs (well within free tier)
+
+#### Request Format
+```python
+prompt = f"""
+Analyze the following {len(jobs)} jobs for relevance to a software developer position.
+Return a JSON object with this exact structure:
+{{
+  "jobs": [
+    {{"index": 0, "relevant": "yes/no/maybe", "reason": "brief explanation"}},
+    ...
+  ]
+}}
+
+Jobs to analyze:
+{job_list_formatted}
+"""
+```
+
+#### Response Parsing
+- Parse JSON response
+- Map each result to corresponding JobData object by index
+- Apply filter level logic (yes/maybe/no/all)
+- Handle parsing errors with fallback to individual analysis
+
 ### Dependencies
 - `requests` - HTTP requests
 - `selenium` - Browser automation
-- `ollama` - Local LLM integration
-- `schedule` - Task scheduling
+- `google-generativeai` - Gemini API integration (FREE tier)
+- `schedule` - Task scheduling (future)
 
 ### Logging Format
 ```
@@ -277,8 +332,11 @@ class MessageData:
   "urls": ["https://example.com/jobs"],
   "keywords": ["python", "developer"],
   "llm": {
-    "provider": "ollama",
-    "model": "llama2"
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "api_key": "env:GEMINI_API_KEY",
+    "batch_processing": true,
+    "output_format": "json"
   },
   "notifications": {
     "gmail": {
@@ -295,19 +353,27 @@ class MessageData:
 ```
 
 ## Success Criteria
-- [ ] All components work independently
-- [ ] Data flows correctly between components
-- [ ] LLM filtering works with Ollama
-- [ ] Notifications sent via Gmail/Telegram
+- [x] All components work independently
+- [x] Data flows correctly between components
+- [x] LLM filtering works with Gemini Flash API
+- [x] Batch job filtering implemented (all jobs in one request)
+- [x] Structured JSON output parsing working
+- [x] Job filtering based on relevance status working
+- [ ] Notifications sent via Gmail/Telegram (future)
 - [ ] CLI interface functional
-- [ ] Windows Task Scheduler integration
-- [ ] Error handling implemented
-- [ ] Logging system working
+- [ ] Windows Task Scheduler integration (future)
+- [x] Error handling implemented
+- [x] Logging system working
 - [ ] Documentation complete
 
-## Next Steps
-1. Create package structure
-2. Implement data models
-3. Refactor existing components
-4. Create new components
-5. Integrate and test
+## Next Steps (Current Focus)
+1. ✅ Create package structure
+2. ✅ Implement data models
+3. ✅ Refactor existing components
+4. ✅ Implement Gemini Flash provider with batch processing
+5. ✅ Update LLM interface for batch job analysis
+6. ✅ Implement structured JSON output parsing
+7. ✅ Create JobFilter for relevance-based filtering
+8. **→ Implement MessageFormatter for notification messages**
+9. **→ Implement NotificationService for Gmail/Telegram**
+10. **→ Integrate and test complete workflow**

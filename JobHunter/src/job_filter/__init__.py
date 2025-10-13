@@ -1,3 +1,7 @@
-"""Job filter package for LLM-based job filtering."""
+"""job filter package for filtering jobs."""
 
-# This package will contain LLM filtering functionality
+# This package will contain job filtering functionality
+
+from .job_filter import JobFilter
+
+__all__ = ['JobFilter']

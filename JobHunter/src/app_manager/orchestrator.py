@@ -1,10 +1,14 @@
 """Application orchestrator for coordinating all components."""
 
-from typing import List
 from src.logger import get_logger
-from src.config_manager.config_manager import ConfigManager
+from src.config import scraping_settings
 from src.job_crawler.job_crawler_manager import JobCrawlerManager
 from src.job_storage.job_storage_manager import JobStorageManager
+from src.llm_communication.gemini_provider import GeminiProvider
+from src.llm_communication.llm_communicator import LLMCommunicator
+from src.job_filter.job_filter import JobFilter
+from src.data_models import JobData, FilteredJobs
+from typing import List
 
 
 class JobHunterOrchestrator:
@@ -16,40 +20,45 @@ class JobHunterOrchestrator:
     
     def __init__(self) -> None:
         """Initialize the orchestrator."""
-        # Get logger
         self.logger = get_logger("orchestrator")
-        
-        # Initialize component managers
-        self.config_manager = ConfigManager()
-        self.job_crawler_manager = JobCrawlerManager()
-        self.job_storage_manager = JobStorageManager()
-        
+        self.job_crawler_manager = JobCrawlerManager() ## Getting urls
+        # self.job_storage_manager = JobStorageManager() ## Saving jobs
+        # self.job_filter = JobFilter() ## Job Filter (Job Filter module)
+        # self.gemini_provider = GeminiProvider() ## LLM Provider (LLM module)
+        # self.llm_communicator = LLMCommunicator(self.gemini_provider) ## LLM Communicator (LLM module)
+        self.jobs: List[JobData] = []
+
         self.logger.info("JobHunter orchestrator initialized")
     
     def run(self) -> None:
         """Run the complete application workflow."""
+
+        urls: List[str] = scraping_settings.urls
+        keywords: List[str] = scraping_settings.keywords
         
         try:
             self.logger.info("Starting JobHunter application")
-            
-            # Get configuration
-            urls = self.config_manager.get_urls()
-            keywords = self.config_manager.get_keywords()
-            
-            self.logger.info(f"Processing {len(urls)} URLs with {len(keywords)} keywords")
-            
+
             # Step 1: Crawl jobs
-            found_jobs = self.job_crawler_manager.crawl_jobs(urls, keywords)
+            self.logger.info(f"Starting Phase 1")
+            self.jobs = self.job_crawler_manager.crawl_jobs(urls, keywords)
+
+            # Step 2: Update job status using LLM
+            # self.logger.info(f"Starting Phase 2: Updating job status for {len(self.jobs)} jobs using LLM")
+            # self.llm_communicator.update_job_status(self.jobs)
             
-            if found_jobs:
-                # Step 2: Save jobs
-                self.job_storage_manager.save_jobs(found_jobs)
-                
-                # Step 3: Print summary
-                summary = self.job_storage_manager.get_jobs_summary()
-                self.logger.info(f"Application completed. Summary: {summary}")
-            else:
-                self.logger.info("No jobs found matching the specified keywords")
+            # # Step 3: Filter jobs based on relevance
+            # self.logger.info(f"Starting Phase 3: Filtering {len(self.jobs)} jobs based on relevance")
+            # filtered_jobs: FilteredJobs = self.job_filter.filter_jobs(self.jobs)
+            
+            # # Step 4: Save filtered jobs
+            # self.logger.info(f"Starting Phase 4: Saving {len(filtered_jobs.relevant_jobs)} filtered jobs")
+            # self.job_storage_manager.save_jobs(filtered_jobs.relevant_jobs)
+
+            # # Step 5: Send summary to user
+            # self.logger.info(f"Starting Phase 5: Sending summary to user")
+            ## TODO: Implement summary sending to user
+
                 
         except KeyboardInterrupt:
             self.logger.info("Application interrupted by user")

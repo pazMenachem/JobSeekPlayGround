@@ -2,8 +2,8 @@
 
 from typing import List
 from .job_scraper import JobScraper
-from .browser_manager import WebDriverManager
-from .url_manager import URLManager
+from .browser_driver import BrowserDriver
+from .page_navigator import PageNavigator
 from src.data_models import JobData
 from src.logger import get_logger
 
@@ -19,49 +19,57 @@ class JobCrawlerManager:
         """Initialize the job crawler manager."""
         self.logger = get_logger("job_crawler")
         self.job_scraper = None
-        self.url_manager = None
+        self.page_navigator = None
     
     def crawl_jobs(self, urls: List[str], keywords: List[str]) -> List[JobData]:
-        """Crawl jobs from specified URLs.
+        """Crawl jobs from specified URLs."""
+        result: List[JobData] = []
+
+        self.logger.info(f"Starting job crawl for {len(urls)} URLs with {len(keywords)} keywords")
+
+        try:
+            with BrowserDriver() as driver:
+                self.job_scraper = JobScraper(driver)
+                self.page_navigator = PageNavigator(driver)
+
+                for url in urls:
+                    driver.get(url)
+                    result.extend(self._process_url(keywords, url))
+
+        except Exception as e:
+            raise RuntimeError(f"Error during job crawling: {e}")
+        
+        if not result:
+            raise RuntimeError("No jobs found during crawling")
+
+        self.logger.info(f"Found {len(result)}\njobs:\n")
+        for i, job in enumerate(result, 1):
+            self.logger.info(f"  {i}. {job.title} at {job.company}")
+        return result
+    
+    def _process_url(self, keywords: List[str], url: str) -> List[JobData]:
+        """
+        Process all pages for current URL.
         
         Args:
-            urls: List of URLs to crawl
-            keywords: List of keywords to search for
-            
-        Returns:
-            List of JobData objects for found jobs
-        """
-        self.logger.info(f"Starting job crawl for {len(urls)} URLs")
-        
-        all_found_jobs = []
-        
-        try:
-            with WebDriverManager() as driver:
-                # Initialize components
-                self.job_scraper = JobScraper(driver)
-                self.url_manager = URLManager(driver)
-                
-                # Process all URLs
-                job_tuples = self.url_manager.process_urls(
-                    urls,
-                    lambda: self.job_scraper.find_jobs_with_keywords(keywords)
+            keywords: List of keywords to search for in job titles.
+            all_found_jobs: List of all found jobs.
+            url: URL to process.
+        """        
+        result: List[JobData] = []
+        ongoing = True
+
+        # The url is set at driver attribute.
+        # Every time we go to next page, the url is updated.
+        while ongoing:
+
+            # Find jobs on the current page
+            result.extend(
+                self.job_scraper.scrape_jobs(keywords)
                 )
-                
-                # Convert tuples to JobData objects
-                for i, (job_url, job_title) in enumerate(job_tuples):
-                    job_data = JobData(
-                        id=f"job_{i+1}",
-                        title=job_title,
-                        company="Unknown",  # Will be extracted later
-                        url=job_url,
-                        source_url=urls[0] if urls else ""
-                    )
-                    all_found_jobs.append(job_data)
-                
-                self.logger.info(f"Found {len(all_found_jobs)} jobs")
-                
-        except Exception as e:
-            self.logger.error(f"Error during job crawling: {e}")
-            raise
-        
-        return all_found_jobs
+
+            # Try to go to next page
+            if not self.page_navigator.go_to_next_page():
+                ongoing = False
+
+        return result

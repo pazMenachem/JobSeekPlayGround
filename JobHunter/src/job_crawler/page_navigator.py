@@ -1,90 +1,82 @@
-"""Page navigation for handling URLs and pagination."""
+"""Page navigation for handling URLs and pagination using Playwright."""
 
 import logging
-import time
-from typing import Optional, List
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
+import re
+from typing import Optional
+from playwright.sync_api import Page, Locator
 from src.config import scraping_settings
+
+# Constants for button detection
+QUICK_SELECTORS = [
+    "a[aria-label='Next']",
+    "a[aria-label='next']",
+    ".next-page",
+    ".pagination .next",
+    "[data-testid='pagination-next']",
+    "button[aria-label='Next']",
+    ".pagination a:last-child"
+]
+
+TEXT_SELECTORS = [
+    "button:has-text('next')",
+    "a:has-text('next')",
+    "button:has-text('›')",
+    "a:has-text('›')",
+    "[aria-label*='next' i]",
+    "[aria-label*='Next' i]"
+]
 
 
 class PageNavigator:
-    """Page navigation for job scraping.
+    """Page navigation for job scraping using Playwright.
     
-    Handles URL navigation and pagination for comprehensive job scraping.
+    Handles URL navigation and pagination with flexible button detection.
     """
     
-    # Quick selectors (most common pagination elements)
-    QUICK_SELECTORS: List[str] = [
-        "a[aria-label='Next']",
-        "a[aria-label='next']", 
-        ".next-page",
-        ".pagination .next",
-        "a:contains('Next')",
-        "a:contains('>')"
-    ]
-    
-    # XPath queries for text-based search
-    XPATH_QUERIES: List[str] = [
-        "//a[contains(text(), 'Next')]",
-        "//a[contains(text(), '>')]",
-        "//button[contains(text(), 'Next')]"
-    ]
-    
-    # Fallback selectors (less common but still useful)
-    FALLBACK_SELECTORS: List[str] = [
-        ".pagination-next",
-        ".next",
-        "[data-testid='pagination-next']",
-        "button[aria-label='Next']",
-        ".pagination a:last-child"
-    ]
-    
-    def __init__(self, driver: webdriver.Chrome | webdriver.Firefox | webdriver.Edge) -> None:
+    def __init__(self, page: Page) -> None:
         """Initialize the page navigator.
         
         Args:
-            driver: WebDriver instance for browser automation.
+            page: Playwright Page instance for browser automation.
         """
-        self.driver = driver
+        self.page = page
         self.logger = logging.getLogger(__name__)
         self.current_page = 1
     
     def go_to_next_page(self) -> bool:
-        """Navigate to the next page if available.
+        """Navigate to the next page with smart button detection.
         
         Returns:
             True if successfully moved to next page, False if no next page available.
         """
+        self.logger.info(f"Attempting to navigate to next page..")
+        
         try:
             if not self._check_page_limit():
                 return False
             
-            next_page_element = self._find_next_page_element()
-
-            if next_page_element is None:
+            next_button = self._find_next_page_element()
+            if next_button is None:
                 self.logger.info("No next page found")
                 return False
             
-            current_url = self.driver.current_url
-            self.logger.info(f"Attempting to navigate from page {self.current_page} to next page")
+            current_url = self.page.url
             
-            if not self._click_next_page_element(next_page_element):
-                return False
+            # Playwright auto-waits for element to be clickable
+            next_button.click()
             
-            # Driver timeout already handles page loading
-            
+            # Wait for navigation (if URL changes)
+            try:
+                self.page.wait_for_url(lambda url: url != current_url, timeout=5000)
+            except:
+                # URL might not change (AJAX pagination)
+                self.page.wait_for_timeout(2000)
+
             self.current_page += 1
-            self.logger.info(f"Successfully moved to page {self.current_page}")
             return True
-            
-        except TimeoutException:
-            self.logger.warning("Timeout waiting for next page to load")
-            return False
+
         except Exception as e:
-            self.logger.warning(f"Error navigating to next page: {str(e)[:100]}...")
+            self.logger.warning(f"Error navigating to next page: {str(e)[:100]}")
             return False
     
     def _check_page_limit(self) -> bool:
@@ -94,63 +86,27 @@ class PageNavigator:
             return False
         return True
     
-    def _click_next_page_element(self, next_page_element: webdriver.remote.webelement.WebElement) -> bool:
-        """Click the next page element using multiple methods."""
-        # Scroll to element and wait
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", next_page_element)
-        time.sleep(2)  # Give more time for dynamic content
+    def _find_next_page_element(self) -> Optional[Locator]:
+        """Find next page button with flexible text matching."""
         
-        # Try different click methods
-        click_methods = [
-            lambda: next_page_element.click(),
-            lambda: self.driver.execute_script("arguments[0].click();", next_page_element),
-            lambda: ActionChains(self.driver).move_to_element(next_page_element).click().perform()
+        # Try different detection methods
+        methods = [
+            # Role-based (most reliable)
+            lambda: self.page.get_by_role("button", name=re.compile("next|›|→", re.IGNORECASE)).first,
+            lambda: self.page.get_by_role("link", name=re.compile("next|›|→", re.IGNORECASE)).first,
+            # Text selectors
+            *[lambda s=sel: self.page.locator(s).first for sel in TEXT_SELECTORS],
+            # CSS selectors
+            *[lambda s=sel: self.page.locator(s).first for sel in QUICK_SELECTORS]
         ]
         
-        for click_method in click_methods:
+        for method in methods:
             try:
-                click_method()
-                return True
-            except Exception as e:
+                element = method()
+                if element.count() > 0 and element.is_visible():
+                    return element
+            except:
                 continue
-
-        self.logger.error("All click methods failed")
-        return False
-    
-    
-    def _find_next_page_element(self) -> Optional[webdriver.remote.webelement.WebElement]:
-        """Find the next page button/link."""
-        self.logger.info("Searching for next page element...")
-        
-        # Try all selector types in order
-        selector_groups = [
-            (self.QUICK_SELECTORS, By.CSS_SELECTOR, "quick selector"),
-            (self.XPATH_QUERIES, By.XPATH, "XPath"),
-            (self.FALLBACK_SELECTORS, By.CSS_SELECTOR, "fallback selector")
-        ]
-        
-        for selectors, by_method, selector_type in selector_groups:
-            element = self._try_selectors(selectors, by_method, selector_type)
-            if element:
-                return element
         
         self.logger.warning("No next page element found")
-        return None
-    
-    def _try_selectors(
-        self, 
-        selectors: List[str], 
-        by_method: By, 
-        selector_type: str
-        ) -> Optional[webdriver.remote.webelement.WebElement]:
-        """Try a list of selectors and return the first valid element found."""
-        for selector in selectors:
-            try:
-                elements = self.driver.find_elements(by_method, selector)
-                for element in elements:
-                    if element.is_displayed() and element.is_enabled():
-                        self.logger.info(f"Found next page element with {selector_type}: {selector}")
-                        return element
-            except Exception:
-                continue
         return None

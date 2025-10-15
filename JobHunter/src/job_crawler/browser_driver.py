@@ -1,114 +1,62 @@
-"""Browser driver for automation."""
+"""Browser driver for automation using Playwright."""
 
 import logging
-from typing import Optional
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
+from playwright.sync_api import sync_playwright, Page, Browser, BrowserContext
 from src.config import browser_settings
 
 
 class BrowserDriver:
     """Browser driver for automation.
     
-    Creates and configures WebDriver instances for Chrome and Firefox browsers.
+    Creates and configures Playwright browser instances for Firefox and Chromium.
     """
     
     def __init__(
         self, 
         browser: str = browser_settings.browser_type, 
-        headless: bool = browser_settings.headless_mode, 
-        options: Optional[ChromeOptions | FirefoxOptions] = None
+        headless: bool = browser_settings.headless_mode
         ) -> None:
         """Initialize the browser driver.
         
         Args:
-            browser: Type of browser to use ('chrome', 'firefox').
+            browser: Type of browser to use ('firefox', 'chrome'/'chromium').
             headless: Whether to run browser in headless mode.
-            options: Custom browser options to use.
         """
         self.browser = browser.lower()
         self.headless = headless
-        self.options = options
-        self.driver: Optional[webdriver.Chrome | webdriver.Firefox] = None
+        self.playwright = None
+        self.browser_instance: Browser | None = None
+        self.context: BrowserContext | None = None
         self.logger = logging.getLogger(__name__)
     
-    def create_driver(self) -> webdriver.Chrome | webdriver.Firefox:
-        """Create and configure a WebDriver instance.
-        
-        Returns:
-            Configured WebDriver instance.
-            
-        Raises:
-            ValueError: If unsupported browser type is specified.
-        """
-        try:
-            match self.browser:
-                case "chrome":
-                    return self._create_chrome_driver()
-                case "firefox":
-                    return self._create_firefox_driver()
-                case _:
-                    raise ValueError(f"Unsupported browser type: {self.browser}. Supported: chrome, firefox")
-
-        except Exception as e:
-            self.logger.error(f"Failed to create {self.browser} driver: {e}")
-            raise
-    
-    def _create_chrome_driver(self) -> webdriver.Chrome:
-        """Create and configure a Chrome WebDriver instance.
-        
-        Returns:
-            Configured Chrome WebDriver instance.
-        """
-        options = self.options if self.options else ChromeOptions()
-        if self.headless:
-            options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        
-        service = ChromeService(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        self._configure_driver(driver)
-        return driver
-    
-    def _create_firefox_driver(self) -> webdriver.Firefox:
-        """Create and configure a Firefox WebDriver instance.
-        
-        Returns:
-            Configured Firefox WebDriver instance.
-        """
-        options = self.options if self.options else FirefoxOptions()
-        if self.headless:
-            options.add_argument("--headless")
-        
-        service = FirefoxService(GeckoDriverManager().install())
-        driver = webdriver.Firefox(service=service, options=options)
-        self._configure_driver(driver)
-        return driver
-    
-    def _configure_driver(self, driver: webdriver.Chrome | webdriver.Firefox) -> None:
-        """Configure driver settings.
-        
-        Args:
-            driver: WebDriver instance to configure.
-        """
-        driver.implicitly_wait(browser_settings.implicit_wait)
-        driver.set_page_load_timeout(browser_settings.page_load_timeout)
-        driver.maximize_window()
-    
-    def __enter__(self) -> webdriver.Chrome | webdriver.Firefox:
+    def __enter__(self) -> Page:
         """Context manager entry.
         
         Returns:
-            Configured WebDriver instance.
+            Configured Playwright Page instance.
         """
-        self.driver = self.create_driver()
-        return self.driver
+        self.playwright = sync_playwright().start()
+        
+        # Launch appropriate browser
+        match self.browser:
+            case "chrome" | "chromium":
+                self.browser_instance = self.playwright.chromium.launch(headless=self.headless)
+            case "firefox":
+                self.browser_instance = self.playwright.firefox.launch(headless=self.headless)
+            case _:
+                raise ValueError(f"Unsupported browser: {self.browser}. Use 'firefox' or 'chrome'")
+        
+        # Create context with settings
+        self.context = self.browser_instance.new_context(
+            viewport={'width': 1920, 'height': 1080}
+        )
+        
+        # Create and configure page
+        page = self.context.new_page()
+        page.set_default_timeout(browser_settings.page_load_timeout * 1000)  # Convert to ms
+        
+        self.logger.info(f"Playwright {self.browser} browser launched")
+        return page
     
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Context manager exit.
@@ -118,6 +66,11 @@ class BrowserDriver:
             exc_val: Exception value.
             exc_tb: Exception traceback.
         """
-        if self.driver:
-            self.driver.quit()
-            self.logger.info("WebDriver closed")
+        if self.context:
+            self.context.close()
+        if self.browser_instance:
+            self.browser_instance.close()
+        if self.playwright:
+            self.playwright.stop()
+        
+        self.logger.info("Playwright browser closed")

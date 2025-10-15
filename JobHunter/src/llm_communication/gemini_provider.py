@@ -31,10 +31,10 @@ class GeminiProvider(LLMInterface):
     
     def send_to_llm(self, prompt: str) -> str:
         """Send a prompt to the Gemini API and get the raw response.
-        
+
         Args:
             prompt: The prompt to send to the LLM
-            
+
         Returns:
             Raw response from the LLM (JSON string for batch processing)
         """

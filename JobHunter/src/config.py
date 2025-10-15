@@ -21,27 +21,9 @@ DEFAULT_BASE_PROMPT = """
     You are a helpful assistant that analyzes job postings and determines if they are relevant to a software engineer.
     You will be given a job posting and you will need to determine if it is relevant to a software engineer.
     You will need to determine if the job posting is relevant to a software engineer.
-    You will need to determine if the job posting is relevant to a software engineer.
     Is this job relevant for a software engineer? Answer with one word: yes, no, or maybe.
 """
 
-JOB_TITLE_SELECTORS = [
-    "h2 a",  # Common for job titles
-    "h3 a",
-    ".job-title a",
-    ".title a",
-    "[data-testid='job-title'] a",
-    # Additional selectors for various job sites
-    "a[href*='job']",  # Links containing 'job' in href
-    "a[href*='career']",  # Links containing 'career' in href
-    ".job-listing a",  # Job listing links
-    ".career-item a",  # Career item links
-    ".position a",  # Position links
-    "li a",  # List item links (common for job lists)
-    "div a",  # Div links (fallback)
-    "span a",  # Span links
-    "p a"  # Paragraph links
-]
 
 class BrowserSettings:
     """Browser settings for the job scraper application."""
@@ -50,20 +32,17 @@ class BrowserSettings:
         self, 
         browser_type: str = "firefox",
         headless_mode: bool = False, 
-        implicit_wait: int = 5,
-        page_load_timeout: int = 10
+        page_load_timeout: int = 30
         ) -> None:
         """Initialize the browser settings.
         
         Args:
             browser_type: Type of browser to use ('chrome', 'firefox').
             headless_mode: Whether to run browser in headless mode.
-            implicit_wait: Seconds to wait for elements to load
-            page_load_timeout: Maximum time to wait for page to load
+            page_load_timeout: Maximum time to wait for page to load (seconds)
         """
         self.browser_type = browser_type
         self.headless_mode = headless_mode
-        self.implicit_wait = implicit_wait
         self.page_load_timeout = page_load_timeout
 
 class ScrapingSettings:
@@ -78,7 +57,7 @@ class ScrapingSettings:
         ) -> None:
         """
         Initialize the scraping settings.
-        
+
         Args:
             page_load_timeout: Maximum time to wait for page to load
             scroll_pause_time: Time to pause between scrolls
@@ -138,20 +117,8 @@ class LLMSettings:
         self.llm_provider = llm_provider
         self.llm_model = llm_model
 
-class JobSiteSelectors:
-    """Job site selectors for the job scraper application."""
-    
-    def __init__(self, job_title_selectors: List[str] = JOB_TITLE_SELECTORS) -> None:
-        """Initialize the job site selectors.
-        
-        Args:
-            job_title_selectors: Job title selectors
-        """
-        self.job_title_selectors = job_title_selectors
-
 browser_settings = BrowserSettings()
 scraping_settings = ScrapingSettings()
 output_settings = OutputSettings()
 job_filter_settings = JobFilterSettings()
 llm_settings = LLMSettings()
-job_site_selectors = JobSiteSelectors()

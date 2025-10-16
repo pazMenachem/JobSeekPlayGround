@@ -5,6 +5,7 @@ from .job_scraper import JobScraper
 from .browser_driver import BrowserDriver
 from .page_navigator import PageNavigator
 from src.data_models import JobData
+from src.config import scraping_settings
 from src.logger import get_logger
 
 
@@ -21,7 +22,7 @@ class JobCrawlerManager:
         self.job_scraper = None
         self.page_navigator = None
     
-    def crawl_jobs(self, urls: List[str], keywords: List[str]) -> List[JobData]:
+    def crawl_jobs(self) -> List[JobData]:
         """Crawl jobs from specified URLs."""
         self.logger.info(f"Starting job crawl..")
 
@@ -32,9 +33,9 @@ class JobCrawlerManager:
                 self.job_scraper = JobScraper(page)
                 self.page_navigator = PageNavigator(page)
 
-                for url in urls:
+                for url in scraping_settings.urls:
                     page.goto(url, wait_until="domcontentloaded")
-                    result.extend(self._process_url(keywords, url))
+                    result.extend(self._process_url(url))
 
         except Exception as e:
             raise RuntimeError(f"Error during job crawling: {e}")
@@ -47,12 +48,11 @@ class JobCrawlerManager:
             self.logger.info(f"  {i}. {job.title} at {job.company}")
         return result
     
-    def _process_url(self, keywords: List[str], url: str) -> List[JobData]:
+    def _process_url(self, url: str) -> List[JobData]:
         """
         Process all pages for current URL.
         
         Args:
-            keywords: List of keywords to search for in job titles.
             url: URL to process.
             
         Returns:
@@ -64,7 +64,7 @@ class JobCrawlerManager:
         # Process all pages for this URL
         while ongoing:
             # Find jobs on the current page
-            result.extend(self.job_scraper.scrape_jobs(keywords))
+            result.extend(self.job_scraper.scrape_jobs())
 
             # Try to go to next page
             if not self.page_navigator.go_to_next_page():

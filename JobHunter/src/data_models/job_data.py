@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from .relevance_status import RelevanceStatus
-
+from src.logger import get_logger
 
 @dataclass
 class JobData:
@@ -34,4 +34,16 @@ class JobData:
             self.found_date = datetime.now()
 
     def __str__(self):
-        return f"Job #{self.id}: {self.title} at {self.company}"
+        return f"""
+        Job #{self.id}:
+        \nTitle: {self.title}
+        \nCompany: {self.company}
+        \nURL: {self.url}
+        \nSource URL: {self.source_url}
+        \nRelevant: {self.relevant.name}
+        \nReason: {self.reason}
+        """
+
+def log_job_data(jobs: list[JobData]):
+    for job in jobs:
+        get_logger("job_data").info(job)

@@ -29,16 +29,14 @@ class PromptFormatter:
         """
         # Format jobs for the prompt
         jobs_text = "\n".join([
-            f"\nJob {i}:\n"
+            f"\nid: {i}:\n"
             f"  Title: {job.title}\n"
             f"  Company: {job.company}\n"
             f"  URL: {job.url}\n"
-            f"  Source: {job.source_url}"
+            f"  Source: {job.source_url}\n"
             for i, job in enumerate(jobs)
         ])
         
         message_result = f"""{base_prompt}\nJobs to analyze:{jobs_text}"""
-        
-        self.logger.info(f"Formatted prompt: {message_result}")
 
         return message_result

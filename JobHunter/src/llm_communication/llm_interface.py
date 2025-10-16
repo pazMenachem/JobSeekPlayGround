@@ -9,7 +9,6 @@ class LLMInterface(ABC):
     (Ollama, OpenAI, Gemini, etc.) without changing the rest of the code.
     """
 
-    @abstractmethod
     def is_available(self) -> None:
         """Check if the LLM service is available.
         
@@ -31,5 +30,10 @@ class LLMInterface(ABC):
         Returns:
             Raw response from the LLM (JSON string for batch processing)
         """
+        pass
+
+    @abstractmethod
+    def _setup(self) -> None:
+        """Setup the LLM provider."""
         pass
     

@@ -1,7 +1,14 @@
 """Configuration settings for the job scraper application."""
 
+import os
+from dotenv import load_dotenv
 from typing import List
 from src.data_models import RelevanceStatus
+
+DEFAULT_LLM_PROVIDER = "gemini"
+DEFAULT_LLM_MODEL = "gemini-2.5-flash"
+
+## USER SETTINGS FOR JOB SCRAPING - MODIFY THIS SECTION AS NEEDED
 
 # Keywords to search for (modify this list as needed)
 DEFAULT_KEYWORDS = [
@@ -11,6 +18,15 @@ DEFAULT_KEYWORDS = [
     "software engineer",
 ]
 
+EXCLUDED_KEYWORDS = [
+    "senior",
+    "marketing",
+    "sales",
+    "hr",
+    "finance",
+    "operations",
+]
+
 # URLs to scrape (add your target job sites here)
 TARGET_URLS = [
     "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364",
@@ -18,11 +34,52 @@ TARGET_URLS = [
 ]
 
 DEFAULT_BASE_PROMPT = """
-    You are a helpful assistant that analyzes job postings and determines if they are relevant to a software engineer.
-    You will be given a job posting and you will need to determine if it is relevant to a software engineer.
-    You will need to determine if the job posting is relevant to a software engineer.
-    Is this job relevant for a software engineer? Answer with one word: yes, no, or maybe.
+You are a job relevance analyzer for computer science graduates. Analyze each job posting(url, title, company, description) and determine relevance.
+
+ANALYSIS CRITERIA:
+Analyze the FULL job description content, not just the title. Look for:
+
+1. TECHNICAL SKILLS & REQUIREMENTS:
+   - Programming languages (Python, Java, C++, JavaScript, etc.)
+   - Software development tools (Git, Docker, AWS, etc.)
+   - Technical frameworks and technologies
+   - Computer science concepts (algorithms, data structures, etc.)
+
+2. ROLE RESPONSIBILITIES:
+   - Software development, coding, programming
+   - System design, architecture, engineering
+   - Data analysis, machine learning, AI
+   - Technical problem-solving, debugging
+   - Code review, testing, quality assurance
+
+3. EXPERIENCE LEVEL INDICATORS:
+   - "0-1 years", "entry-level", "junior", "graduate", "trainee" = YES
+   - "2+ years", "experienced" = MAYBE
+   - "0 years", "no experience required" = YES
+
+4. INDUSTRY & DOMAIN:
+   - Technology companies, startups, software firms
+   - IT departments, engineering teams
+   - Data science, AI/ML companies
+   - Non-tech companies with technical roles
+
+RELEVANCE RULES:
+- YES: Technical role + (junior/entry-level OR 0-1 years experience)
+- MAYBE: Technical role + (2+ years experience)
+- NO: Non-technical roles (sales, marketing, HR, finance, operations)
+
+OUTPUT FORMAT:
+Return JSON array with this exact structure:
+[
+  {"id": "1", "relevant": "yes", "reason": "Junior software engineer position"},
+  {"id": "2", "relevant": "maybe", "reason": "Senior role but CS field"},
+  {"id": "3", "relevant": "no", "reason": "Marketing position, not technical"}
+]
 """
+
+job_filter_default_level = RelevanceStatus.MAYBE
+
+## END OF USER SETTINGS FOR JOB SCRAPING
 
 
 class BrowserSettings:
@@ -53,7 +110,8 @@ class ScrapingSettings:
         scroll_pause_time: int = 2, 
         max_pages_per_url: int = 3,
         urls: List[str] = TARGET_URLS,
-        keywords: List[str] = DEFAULT_KEYWORDS
+        keywords: List[str] = DEFAULT_KEYWORDS,
+        excluded_keywords: List[str] = EXCLUDED_KEYWORDS
         ) -> None:
         """
         Initialize the scraping settings.
@@ -70,6 +128,7 @@ class ScrapingSettings:
         self.max_pages_per_url = max_pages_per_url
         self.urls = urls
         self.keywords = keywords
+        self.excluded_keywords = excluded_keywords
 
 
 class OutputSettings:
@@ -89,7 +148,7 @@ class OutputSettings:
 class JobFilterSettings:
     """Job filtering settings for the job scraper application."""
     
-    def __init__(self, default_job_filter_level: RelevanceStatus = RelevanceStatus.ALL) -> None:
+    def __init__(self, default_job_filter_level: RelevanceStatus) -> None:
         """Initialize the job filtering settings.
         
         Args:
@@ -102,9 +161,10 @@ class LLMSettings:
     
     def __init__(
         self, 
-        base_llm_prompt: str = DEFAULT_BASE_PROMPT,
-        llm_provider: str = "gemini",
-        llm_model: str = "gemini-2.5-flash"
+        base_llm_prompt: str,
+        llm_provider: str,
+        llm_model: str ,
+        api_key: str
         ) -> None:
         """Initialize the LLM settings.
         
@@ -112,13 +172,28 @@ class LLMSettings:
             base_llm_prompt: Base LLM prompt
             llm_provider: LLM provider: "gemini", "openai"
             llm_model: LLM model: "gemini-2.5-flash", "gpt-4o"
+            api_key: API key for the LLM provider
         """
+        self.api_key = api_key
         self.base_llm_prompt = base_llm_prompt
         self.llm_provider = llm_provider
         self.llm_model = llm_model
 
+load_dotenv()
+
 browser_settings = BrowserSettings()
+
 scraping_settings = ScrapingSettings()
+
 output_settings = OutputSettings()
-job_filter_settings = JobFilterSettings()
-llm_settings = LLMSettings()
+
+job_filter_settings = JobFilterSettings(
+    default_job_filter_level=job_filter_default_level
+)
+
+llm_settings = LLMSettings(
+    base_llm_prompt=DEFAULT_BASE_PROMPT,
+    llm_provider=DEFAULT_LLM_PROVIDER,
+    llm_model=DEFAULT_LLM_MODEL,
+    api_key=os.getenv("LLM_API_KEY", None)
+    )

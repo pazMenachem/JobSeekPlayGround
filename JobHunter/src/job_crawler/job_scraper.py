@@ -52,18 +52,14 @@ class JobScraper:
         self.logger = get_logger("job_scraper")
         self.jobs_counter = 1
     
-    def scrape_jobs(self, keywords: List[str]) -> List[JobData]:
+    def scrape_jobs(self) -> List[JobData]:
         """
         Find job listings that contain any of the specified keywords.
         
-        Args:
-            keywords: List of keywords to search for in job titles.
-            
         Returns:
             List of JobData objects for jobs that match the keywords.
         """
         self.logger.info(f"Searching for jobs..")
-        
         result: List[JobData] = []
 
         try:
@@ -75,7 +71,7 @@ class JobScraper:
             
             # Find and filter elements
             job_elements = self._find_job_elements()
-            filtered_job_elements = self._filter_job_elements(job_elements, keywords)
+            filtered_job_elements = self._filter_job_elements(job_elements)
             
             for element in filtered_job_elements:
                 result.append(self._extract_job_data(element, self.jobs_counter))
@@ -169,13 +165,12 @@ class JobScraper:
         self.logger.info(f"Found {len(unique_elements)} unique job elements")
         return unique_elements
 
-    def _filter_job_elements(self, job_elements: List[Locator], keywords: List[str]) -> List[Locator]:
+    def _filter_job_elements(self, job_elements: List[Locator]) -> List[Locator]:
         """
         Filter job elements to only include those that match the keywords.
         
         Args:
             job_elements: List of Locators to filter.
-            keywords: List of keywords to search for.
             
         Returns:
             List of Locators that match the keywords.
@@ -185,10 +180,11 @@ class JobScraper:
         for element in job_elements:
             try:
                 text = element.inner_text()
-                if self._matches_keywords(text, keywords):
+                if self._matches_keywords(text, scraping_settings.keywords) and not self._matches_keywords(text, scraping_settings.excluded_keywords):
                     filtered.append(element)
             except Exception:
                 continue
+        self.logger.info(f"{len(filtered)} / {len(job_elements)} jobs titles are relevant")
         return filtered
 
     def _extract_job_data(self, element: Locator, index: int) -> JobData:

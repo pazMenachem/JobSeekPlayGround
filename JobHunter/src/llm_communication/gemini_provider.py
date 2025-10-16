@@ -1,7 +1,7 @@
 """Gemini Flash API provider for batch job filtering."""
 
-import os
-import google.generativeai as genai
+from google import genai
+from google.genai.types import GenerateContentConfig
 from src.logger import get_logger
 from .llm_interface import LLMInterface
 from src.config import llm_settings
@@ -10,6 +10,7 @@ from src.config import llm_settings
 class GeminiProvider(LLMInterface):
     """Gemini Flash API provider for batch job analysis.
     
+    NOTE: Gemini flash module is limited to 20 urls in a single request.
     This provider uses Google's Gemini Flash API to analyze multiple jobs
     in a single batch request, providing efficient and cost-effective filtering.
     """
@@ -19,16 +20,18 @@ class GeminiProvider(LLMInterface):
         self.logger = get_logger("gemini_provider")
         self.model = None
 
+        self._setup()
+        self.logger.info("Gemini provider initialized")
+    
+    def _setup(self) -> None:
+        """Setup the Gemini provider."""
         try:
-            api_key = os.getenv("GEMINI_API_KEY")
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel(llm_settings.llm_model)
+            self.client = genai.Client(api_key=llm_settings.api_key)
+            self.model_id = llm_settings.llm_model
         
         except Exception as e:
             raise RuntimeError(f"Error initializing Gemini provider: {e}")
-        
-        self.logger.info("Gemini provider initialized")
-    
+
     def send_to_llm(self, prompt: str) -> str:
         """Send a prompt to the Gemini API and get the raw response.
 
@@ -40,7 +43,19 @@ class GeminiProvider(LLMInterface):
         """
         self.logger.debug("Sending batch prompt to Gemini API")
         
-        response = self.model.generate_content(prompt)
+        # Configure tools for URL context
+        tools = [{"url_context": {}}]
+        
+        # Configure generation config for URL context
+        config = GenerateContentConfig(
+            tools=tools
+        )
+        
+        response = self.client.models.generate_content(
+            model=self.model_id,
+            contents=prompt,
+            config=config
+        )
         
         if not response.text:
             raise RuntimeError("Empty response from Gemini API")

@@ -3,7 +3,7 @@
 from google import genai
 from google.genai.types import GenerateContentConfig
 from src.logger import get_logger
-from .llm_interface import LLMInterface
+from src.llm_service.llm_base import LLMInterface
 from src.config import llm_settings
 
 

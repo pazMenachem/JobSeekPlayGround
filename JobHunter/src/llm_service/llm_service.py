@@ -5,19 +5,19 @@ from typing import List
 from src.data_models import JobData, RelevanceStatus
 from src.data_models.job_data import log_job_data
 from src.logger import get_logger
-from src.llm_communication.prompt_formatter import PromptFormatter
-from .llm_interface import LLMInterface
+from src.llm_service.prompt_formatter import PromptFormatter
+from src.llm_service.llm_base import LLMInterface
 
 
-class LLMCommunicator:
-    """LLM Communicator - handles job data list and updates status.
+class LLMService:
+    """LLM Service - handles job data list and updates status.
     
     This class manages the job data list and communicates with LLM providers
     to update job status. 
     """
     
     def __init__(self, llm_provider: LLMInterface) -> None:
-        """Initialize the LLM communicator.
+        """Initialize the LLM service.
         
         Args:
             llm_provider: LLM provider implementing LLMInterface
@@ -25,9 +25,9 @@ class LLMCommunicator:
         """
         self.llm_provider = llm_provider
         self.prompt_formatter = PromptFormatter()
-        self.logger = get_logger("llm_communicator")
+        self.logger = get_logger("llm_service")
         
-        self.logger.info("LLM communicator initialized")
+        self.logger.info("LLM service initialized")
 
     def update_job_status(self, jobs: List[JobData]) -> None:
         """

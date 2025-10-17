@@ -1,6 +1,6 @@
 from src.config import llm_settings
-from src.llm_communication.llm_interface import LLMInterface
-from src.llm_communication.gemini_provider import GeminiProvider
+from src.llm_service.llm_base import LLMInterface
+from src.llm_service.gemini_provider import GeminiProvider
 
 
 class LLMProviderFactory:

@@ -179,6 +179,29 @@ class LLMSettings:
         self.llm_provider = llm_provider
         self.llm_model = llm_model
 
+class TelegramSettings:
+    """Telegram notification settings for the job scraper application."""
+    
+    def __init__(
+        self,
+        bot_token: str = None,
+        chat_id: str = None
+        ) -> None:
+        """Initialize the Telegram settings.
+        
+        Args:
+            bot_token: Telegram bot token
+            chat_id: Telegram chat ID to send messages to
+        """
+        self.bot_token = bot_token
+        self.chat_id = chat_id
+        self.enabled = bool(
+            self.bot_token and self.chat_id
+            )
+
+class GmailSettings:
+    pass
+
 load_dotenv()
 
 browser_settings = BrowserSettings()
@@ -197,3 +220,12 @@ llm_settings = LLMSettings(
     llm_model=DEFAULT_LLM_MODEL,
     api_key=os.getenv("LLM_API_KEY", None)
     )
+
+telegram_settings = TelegramSettings(
+    bot_token=os.getenv("TELEGRAM_API_TOKEN", None),
+    chat_id=os.getenv("TELEGRAM_API_CHAT_ID", None)
+    )
+
+gmail_settings = GmailSettings(
+    
+)

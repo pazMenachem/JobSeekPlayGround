@@ -16,7 +16,7 @@ class JobFilter:
     def __init__(self) -> None:
         """Initialize the job filter."""
         self.logger = get_logger("job_filter")
-        self.logger.info("Job filter initialized")
+        self.logger.info("Job filter initialized...")
     
     def filter_jobs(
         self,

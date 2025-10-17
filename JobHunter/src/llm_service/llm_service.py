@@ -3,10 +3,9 @@
 import json
 from typing import List
 from src.data_models import JobData, RelevanceStatus
-from src.data_models.job_data import log_job_data
 from src.logger import get_logger
-from src.llm_service.prompt_formatter import PromptFormatter
 from src.llm_service.llm_base import LLMInterface
+from src.exceptions.exceptions import LLMException
 
 
 class LLMService:
@@ -24,33 +23,31 @@ class LLMService:
             jobs: List of JobData objects to analyze and update
         """
         self.llm_provider = llm_provider
-        self.prompt_formatter = PromptFormatter()
         self.logger = get_logger("llm_service")
         
-        self.logger.info("LLM service initialized")
-
-    def update_job_status(self, jobs: List[JobData]) -> None:
+        self.logger.info("LLM service initialized...")
+        
+    def update_job_status(self,* , jobs: List[JobData], prompt: str) -> None:
         """
         Update job status using LLM analysis.
         """
         self.logger.info(f"Updating status for {len(jobs)} jobs using LLM analysis")
         
-        # self.llm_provider.is_available()
+        try:
+            ## Main logic
+            # Step 1: Send the prompt to the LLM
+            llm_response:str = self.llm_provider.send_to_llm(prompt)
+            self.logger.info(f"LLM response: {llm_response}")
 
-        ## Main logic
-        # Step 1: Format the prompt
-        batch_prompt:str = self.prompt_formatter.format_batch_prompt(jobs)
-        self.logger.info(f"Formatted prompt: {batch_prompt}")
-
-        # Step 2: Send the prompt to the LLM
-        llm_response:str = self.llm_provider.send_to_llm(batch_prompt)
-        self.logger.info(f"LLM response: {llm_response}")
-
-        json_response:dict = self._clean_json_response(llm_response)
-        
-        # Step 3: Parse the response
-        self._parse_batch_response(json_response, jobs)
-        self.logger.info(f"Job status update complete..")
+            json_response:dict = self._clean_json_response(llm_response)
+            
+            # Step 2: Parse the response
+            self._parse_batch_response(json_response, jobs)
+            self.logger.info(f"Job status update complete..")
+            
+        except Exception as e:
+            self.logger.error(f"Error during LLM phase: {e}")
+            raise LLMException()
 
     def _parse_batch_response(self, json_response: list[dict], jobs: List[JobData]) -> None:
         """Parse the LLM response and update existing job list.

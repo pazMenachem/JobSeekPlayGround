@@ -19,18 +19,17 @@ class GeminiProvider(LLMInterface):
         """Initialize the Gemini provider."""
         self.logger = get_logger("gemini_provider")
         self.model = None
-
+        
         self._setup()
-        self.logger.info("Gemini provider initialized")
-    
+        self.logger.info("Gemini provider initialized...")
+        
     def _setup(self) -> None:
         """Setup the Gemini provider."""
-        try:
-            self.client = genai.Client(api_key=llm_settings.api_key)
-            self.model_id = llm_settings.llm_model
-        
-        except Exception as e:
-            raise RuntimeError(f"Error initializing Gemini provider: {e}")
+        if not llm_settings.enabled:
+            raise ValueError("gemini provider is not enabled")
+
+        self.client = genai.Client(api_key=llm_settings.api_key)
+        self.model_id = llm_settings.llm_model
 
     def send_to_llm(self, prompt: str) -> str:
         """Send a prompt to the Gemini API and get the raw response.

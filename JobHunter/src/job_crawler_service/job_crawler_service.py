@@ -7,9 +7,10 @@ from .page_navigator import PageNavigator
 from src.data_models import JobData
 from src.config import scraping_settings
 from src.logger import get_logger
+from src.exceptions.exceptions import JobCrawlerException
 
 
-class JobCrawlerManager:
+class JobCrawlerService:
     """Manages job crawling operations.
 
     This class coordinates the job scraping process, including
@@ -21,6 +22,8 @@ class JobCrawlerManager:
         self.logger = get_logger("job_crawler")
         self.job_scraper = None
         self.page_navigator = None
+        
+        self.logger.info("Job crawler manager initialized...")
     
     def crawl_jobs(self) -> List[JobData]:
         """Crawl jobs from specified URLs."""
@@ -38,7 +41,8 @@ class JobCrawlerManager:
                     result.extend(self._process_url(url))
 
         except Exception as e:
-            raise RuntimeError(f"Error during job crawling: {e}")
+            self.logger.error(f"Error during job crawling: {e}")
+            raise JobCrawlerException()
         
         if not result:
             raise RuntimeError("No jobs found during crawling")

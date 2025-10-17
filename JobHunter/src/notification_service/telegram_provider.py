@@ -2,9 +2,7 @@
 
 import asyncio
 from telegram import Bot
-from telegram.error import TelegramError
 from src.notification_service.notifier_interface import NotifierInterface
-from src.logger import get_logger
 
 
 class TelegramProvider(NotifierInterface):
@@ -21,16 +19,12 @@ class TelegramProvider(NotifierInterface):
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.bot = Bot(token=self.bot_token)
-        self.logger.info("Telegram provider initialized")
     
     def _send_notification(self, message: str) -> None:
         """Send a notification message to Telegram.
         
         Args:
             message: Message text to send
-            
-        Raises:
-            RuntimeError: If sending fails
         """
         try:
             # Run the async function in a new event loop

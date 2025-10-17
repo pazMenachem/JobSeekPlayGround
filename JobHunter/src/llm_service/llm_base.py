@@ -8,27 +8,16 @@ class LLMInterface(ABC):
     This interface allows easy switching between different LLM providers
     (Ollama, OpenAI, Gemini, etc.) without changing the rest of the code.
     """
-
-    def is_available(self) -> None:
-        """Check if the LLM service is available.
-        
-        raises:
-            RuntimeError if the service is not available
-        """
-        response = self.send_to_llm("Hello")
-        
-        if response is None:
-            raise RuntimeError("LLM service is not available")
     
     @abstractmethod
-    def send_to_llm(self, prompt: str) -> str:
-        """Send a prompt to the LLM and get the raw response.
+    def send_to_llm(self, message: str) -> str:
+        """Send a message to the LLM and get the raw response.
         
         Args:
-            prompt: The prompt to send to the LLM
+            message: The message to send to the LLM
             
         Returns:
-            Raw response from the LLM (JSON string for batch processing)
+            Raw response from the LLM (JSON string for LLM processing)
         """
         pass
 

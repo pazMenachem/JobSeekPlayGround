@@ -15,7 +15,7 @@ class NotifierFactory:
         """
         match provider_type.lower():
             case "gmail":
-                return NotifierFactory._create_gmail_provider()
+                pass
             case "telegram":
                 return NotifierFactory._create_telegram_provider()
             case _:
@@ -33,9 +33,4 @@ class NotifierFactory:
     @staticmethod
     def _create_gmail_provider() -> GmailProvider:
         """Create a Gmail provider instance."""
-        if gmail_settings.enabled:
-            return GmailProvider(
-                email=gmail_settings.email,
-                password=gmail_settings.password
-                )
-        raise ValueError("Gmail notifications are not enabled")
+        pass

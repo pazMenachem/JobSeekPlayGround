@@ -1,9 +1,10 @@
 """Notification service for managing different notification providers."""
 
-from typing import List, Optional
+from typing import List
 from src.notification_service.notifier_interface import NotifierInterface
 from src.notification_service.factory import NotifierFactory
 from src.logger import get_logger
+from src.exceptions.exceptions import NotifierException
 
 
 class NotifierService:
@@ -13,7 +14,7 @@ class NotifierService:
         """Initialize the notifier service."""
         self.logger = get_logger("notifier_service")
         self.providers: List[NotifierInterface] = []
-        self.logger.info("Notifier service initialized")
+        self.logger.info("Notifier service initialized...")
     
     def set_providers(self, *args: List[str]) -> None:
         """Set the notification providers.
@@ -36,6 +37,10 @@ class NotifierService:
         if not self.providers:
             raise RuntimeError("No notification providers available")
 
-        for provider in self.providers:
-            provider.send_notification(message=message)
+        try:
+            for provider in self.providers:
+                provider.send_notification(message=message)
+        except Exception as e:
+            self.logger.error(f"Error sending notification: {e}")
+            raise NotifierException()
 

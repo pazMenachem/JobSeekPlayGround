@@ -1,6 +1,6 @@
 """Main application entry point for JobHunter."""
 
-from src.app_manager.orchestrator import JobHunterOrchestrator
+from src.app_manager import JobHunterOrchestrator
 
 def main() -> None:
     """Main application function."""

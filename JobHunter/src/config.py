@@ -178,6 +178,7 @@ class LLMSettings:
         self.base_llm_prompt = base_llm_prompt
         self.llm_provider = llm_provider
         self.llm_model = llm_model
+        self.enabled = bool(self.api_key)
 
 class TelegramSettings:
     """Telegram notification settings for the job scraper application."""

@@ -4,6 +4,8 @@ from typing import List
 from src.data_models import JobData, FilteredJobs, SegmentedMessage
 from src.config import llm_settings
 
+PADDING_LENGTH = 200
+
 class MessageFormatterService:
     """Message formatter service for creating messages from job data."""
 
@@ -30,13 +32,13 @@ class MessageFormatterService:
             f"  Source: {job.source_url}\n"
             for i, job in enumerate(jobs)
         ])
-            
+
         message_result = f"""{base_prompt}\nJobs to analyze:\n{jobs_text}"""
 
         return message_result
 
     @staticmethod
-    def format_summary(filtered_jobs: FilteredJobs) -> SegmentedMessage:
+    def format_summary(filtered_jobs: FilteredJobs, max_length: int) -> SegmentedMessage:
         """Format a readable summary of the filtered jobs for notifications.
         
         Args:
@@ -70,7 +72,7 @@ class MessageFormatterService:
             )
             
             # Check if adding this job would exceed effective limit
-            if len(current_part) + len(job_text) > EFFECTIVE_MAX_LENGTH:
+            if len(current_part) + len(job_text) + PADDING_LENGTH > max_length:
                 # Save current part and start new one
                 message_parts.append(current_part.rstrip())
                 current_part = job_text

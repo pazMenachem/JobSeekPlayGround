@@ -186,22 +186,34 @@ class TelegramSettings:
     def __init__(
         self,
         bot_token: str = None,
-        chat_id: str = None
+        chat_id: str = None,
+        max_message_length: int = 4096
         ) -> None:
         """Initialize the Telegram settings.
         
         Args:
             bot_token: Telegram bot token
             chat_id: Telegram chat ID to send messages to
+            max_message_length: Maximum message length for Telegram (default: 4096)
         """
         self.bot_token = bot_token
         self.chat_id = chat_id
+        self.max_message_length = max_message_length
         self.enabled = bool(
             self.bot_token and self.chat_id
             )
 
 class GmailSettings:
-    pass
+    """Gmail notification settings for the job scraper application."""
+    
+    def __init__(self, max_message_length: int = 1000000) -> None:
+        """Initialize the Gmail settings.
+        
+        Args:
+            max_message_length: Maximum message length for Gmail (default: 1000000)
+        """
+        self.max_message_length = max_message_length
+        self.enabled = False
 
 load_dotenv()
 

@@ -27,7 +27,8 @@ class NotifierFactory:
         if telegram_settings.enabled:
             return TelegramProvider(
                 bot_token=telegram_settings.bot_token,
-                chat_id=telegram_settings.chat_id
+                chat_id=telegram_settings.chat_id,
+                max_message_length=telegram_settings.max_message_length
                 )
         raise ValueError("Telegram notifications are not enabled")
     @staticmethod

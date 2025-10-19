@@ -18,7 +18,6 @@ class TelegramProvider(NotifierInterface):
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.max_message_length = max_message_length
-        self.bot = Bot(token=self.bot_token)
     
     def _send_notification(self, message: str) -> None:
         """Send a notification message to Telegram.
@@ -26,15 +25,7 @@ class TelegramProvider(NotifierInterface):
         Args:
             message: Message text to send
         """
-        try:
-            # Run the async function in a new event loop
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            
-            loop.run_until_complete(self._send_message_async(message))
-
-        finally:
-                loop.close()
+        asyncio.run(self._send_message_async(message))
     
     async def _send_message_async(self, message: str) -> None:
         """Async method to send Telegram message.
@@ -42,7 +33,8 @@ class TelegramProvider(NotifierInterface):
         Args:
             message: Message text to send
         """
-        await self.bot.send_message(
+        bot = Bot(token=self.bot_token)
+        await bot.send_message(
             chat_id=self.chat_id,
             text=message,
             parse_mode='Markdown',

@@ -4,11 +4,10 @@ import asyncio
 from telegram import Bot
 from src.notification_service.notifier_interface import NotifierInterface
 
-
 class TelegramProvider(NotifierInterface):
     """Telegram notification provider using python-telegram-bot."""
     
-    def __init__(self, bot_token: str, chat_id: str) -> None:
+    def __init__(self, bot_token: str, chat_id: str, max_message_length: int) -> None:
         """Initialize the Telegram provider.
         
         Args:
@@ -18,6 +17,7 @@ class TelegramProvider(NotifierInterface):
         super().__init__()
         self.bot_token = bot_token
         self.chat_id = chat_id
+        self.max_message_length = max_message_length
         self.bot = Bot(token=self.bot_token)
     
     def _send_notification(self, message: str) -> None:

@@ -352,28 +352,104 @@ Jobs to analyze:
 }
 ```
 
-## Success Criteria
-- [x] All components work independently
-- [x] Data flows correctly between components
-- [x] LLM filtering works with Gemini Flash API
-- [x] Batch job filtering implemented (all jobs in one request)
-- [x] Structured JSON output parsing working
-- [x] Job filtering based on relevance status working
-- [ ] Notifications sent via Gmail/Telegram (future)
-- [ ] CLI interface functional
-- [ ] Windows Task Scheduler integration (future)
-- [x] Error handling implemented
-- [x] Logging system working
-- [ ] Documentation complete
+## Current System Status
 
-## Next Steps (Current Focus)
-1. ✅ Create package structure
-2. ✅ Implement data models
-3. ✅ Refactor existing components
-4. ✅ Implement Gemini Flash provider with batch processing
-5. ✅ Update LLM interface for batch job analysis
-6. ✅ Implement structured JSON output parsing
-7. ✅ Create JobFilter for relevance-based filtering
-8. **→ Implement MessageFormatter for notification messages**
-9. **→ Implement NotificationService for Gmail/Telegram**
-10. **→ Integrate and test complete workflow**
+### ✅ COMPLETED & WORKING
+1. Complete job scraping pipeline with Playwright
+2. Gemini AI job analysis (batch processing up to 20 jobs)
+3. Telegram notifications (fully functional)
+4. Job filtering by relevance (RelevanceStatus enum)
+5. Logging system (console + timestamped files)
+6. Configuration management (settings classes + env vars)
+7. Error handling (custom exception hierarchy)
+8. Message formatting (LLM prompts + notification summaries)
+9. All core data models (JobData, FilteredJobs, RelevanceStatus, etc.)
+10. Factory patterns for LLM and Notifier providers
+11. Main orchestration workflow (JobHunterOrchestrator)
+
+### 🔴 MVP ISSUES TO RESOLVE
+
+#### 1. Job Storage System
+**Current State:** Code exists but not integrated, doesn't store LLM analysis results
+
+**Requirements to Define:**
+- What data to persist? (URL, LLM analysis, timestamps, notification status)
+- Storage format? (SQLite, JSON, CSV)
+- Duplicate detection strategy? (by URL, by company+title, time-based expiry)
+- Primary use case? (avoid re-sending, analytics, resume interrupted runs)
+
+**Files Affected:**
+- `src/job_storage/job_storage_manager.py`
+- `src/job_storage/results_manager.py`
+- `src/app_manager.py` (integration)
+
+#### 2. Duplicate Job Detection
+**Current State:** Not implemented
+
+**Requirements:**
+- Track previously seen/sent jobs
+- Depends on Job Storage implementation
+- Define deduplication logic (URL-based, title+company-based, or both)
+
+**Files Affected:**
+- `src/job_storage/` (storage layer)
+- `src/app_manager.py` (filtering duplicates before analysis)
+
+#### 3. Handling >20 Jobs with LLM
+**Current State:** Only first 20 jobs analyzed (line 96 in app_manager.py: `prompt = MessageFormatterService.format_llm_prompt(self.jobs[:20])`)
+
+**Gemini Limitation:** URL context tool limited to 20 URLs per request
+
+**Solutions:**
+- Option A: Batch into multiple requests of 20 jobs each
+- Option B: Analyze without URL context (just title/company)
+- Option C: Hybrid approach (first 20 with context, rest without)
+
+**Files Affected:**
+- `src/app_manager.py` (batching logic)
+- `src/llm_service/llm_service.py` (batch processing)
+- `src/message_formatter.py` (prompt formatting)
+
+#### 4. Telegram Message Length Validation
+**Current State:** No validation, Telegram has 4096 character limit
+
+**Requirements:**
+- Detect when summary exceeds limit
+- Split into multiple messages or truncate
+- Maintain readability
+
+**Files Affected:**
+- `src/message_formatter.py` (length checking)
+- `src/notification_service/telegram_provider.py` (message splitting)
+
+#### 5. Error Message Formatting for Notifications
+**Current State:** Line 110 in app_manager.py sends raw exception string: `self.notifier_service.send_notification(message=str(e))`
+
+**Requirements:**
+- User-friendly error messages
+- Include context (which phase failed, what to check)
+- Proper formatting for Telegram
+
+**Files Affected:**
+- `src/exceptions/exceptions.py` (better error messages)
+- `src/app_manager.py` (error formatting)
+- `src/message_formatter.py` (error message templates)
+
+### 📋 POST-MVP FEATURES
+1. CLI Argument Parsing (argparse/click for runtime configuration)
+2. Windows Task Scheduler Integration (automated runs)
+3. Containerization (Docker for cross-platform deployment)
+
+## Implementation Priority List
+
+### Phase 1: Core Fixes (MVP Completion)
+1. **Job Storage System Redesign** - Define requirements and implement
+2. **Duplicate Job Detection** - Integrate with storage
+3. **Handle >20 Jobs with LLM** - Implement batching strategy
+4. **Telegram Message Length Validation** - Add splitting/truncation
+5. **Error Message Formatting** - User-friendly notifications
+
+### Phase 2: Post-MVP Enhancements
+6. **CLI Argument Parsing** - Runtime configuration
+7. **Windows Task Scheduler** - Automated execution
+8. **Containerization** - Docker setup for portability

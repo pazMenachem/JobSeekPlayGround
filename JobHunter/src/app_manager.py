@@ -8,7 +8,7 @@ from src.llm_service.factory import LLMProviderFactory
 from src.llm_service.llm_service import LLMService
 from src.job_filter.job_filter import JobFilter
 from src.notification_service.notifier_service import NotifierService
-from src.data_models import JobData, FilteredJobs, RelevanceStatus
+from src.data_models import JobData, FilteredJobs, RelevanceStatus, SegmentedMessage
 from src.message_formatter import MessageFormatterService
 from src.exceptions.exceptions import JobCrawlerException, LLMException, NotifierException
 from typing import List
@@ -44,11 +44,12 @@ TEST_DATA = [
 ]
 
 
-## TODO:
-# - [ ] Cant send more than 20 urls to llm - fix
-# - [ ] Need to check how long a message can be to be sent to providers (Telegram) 
-# - [ ] Need to fix error message and send it using the provider.
-# - [ ] Need to store sent urls. (Need to add job storage manager)
+## TODO: >>
+# [ ] **Job Storage System Redesign** - Define requirements and implement
+# [ ] **Duplicate Job Detection** - Integrate with storage
+# [ ] **Handle >20 Jobs with LLM** - Implement batching strategy
+# [ ] **Telegram Message Length Validation** - Add splitting/truncation
+# [X] **Error Message Formatting** - User-friendly notifications
 
 
 class JobHunterOrchestrator:
@@ -79,40 +80,50 @@ class JobHunterOrchestrator:
         self.job_filter = JobFilter()
         self.notifier_service = NotifierService()
 
+        ## TODO: shouldnt be hardcoded, should be set in the config file.
         self.notifier_service.set_providers("telegram")
     
     def run(self) -> None:
         """Run the complete application workflow."""
 
         try:
-            self.logger.info("********* Starting to run *********")
+            self.jobs = TEST_DATA
 
+            self.logger.info("********* Starting to run *********")
             # # Step 1: Crawl jobs
-            self.logger.info(f"Starting Phase 1")
-            self.jobs = self.job_crawler_service.crawl_jobs()
+            # self.logger.info(f"Starting Phase 1")
+            # self.jobs = self.job_crawler_service.crawl_jobs()
 
             # # Step 2: Update job status using LLM
-            self.logger.info(f"Starting Phase 2: Updating job status for {len(self.jobs)} jobs using LLM")
-            prompt: str = MessageFormatterService.format_llm_prompt(self.jobs[:20])
-            self.llm_service.update_job_status(jobs=self.jobs, prompt=prompt)
+            # self.logger.info(f"Starting Phase 2: Updating job status for {len(self.jobs)} jobs using LLM")
+            # prompt: str = MessageFormatterService.format_llm_prompt(self.jobs[:20])
+            # self.llm_service.update_job_status(jobs=self.jobs, prompt=prompt)
             
-            # self.jobs = TEST_DATA
             # # Step 3: Filter jobs based on relevance
             self.logger.info(f"Starting Phase 3: Filtering {len(self.jobs)} jobs based on relevance")
             filtered_jobs: FilteredJobs = self.job_filter.filter_jobs(jobs=self.jobs)
 
             # # Step 4: Send summary to user
             self.logger.info(f"Starting Phase 4: Sending summary to user")
-            summary: str = MessageFormatterService.format_summary(filtered_jobs)
-            self.notifier_service.send_notification(summary)
+            
+            for provider in self.notifier_service.providers:
+                summary: SegmentedMessage = MessageFormatterService.format_summary(
+                    filtered_jobs=filtered_jobs,
+                    max_length=provider.max_message_length
+                    )
+                self.notifier_service.send_notification(provider=provider, message=summary)
 
         except (JobCrawlerException, LLMException, NotifierException) as e:
-            self.notifier_service.send_notification(message=str(e))
+            for provider in self.notifier_service.providers:
+                self.notifier_service.send_notification(provider=provider, message=SegmentedMessage(
+                    header="",
+                    message_parts=[str(e)]
+                ))
 
         except KeyboardInterrupt:
             self.logger.info("Application interrupted by user")
         except Exception as e:
             self.logger.error(f"Application failed: {e}")
-            raise
+            self.notifier_service.send_notification(message="Unknown error occurred")
         finally:
             self.logger.info("********* Finished running *********")

@@ -3,6 +3,7 @@
 from typing import List
 from src.notification_service.notifier_interface import NotifierInterface
 from src.notification_service.factory import NotifierFactory
+from src.data_models import SegmentedMessage
 from src.logger import get_logger
 from src.exceptions.exceptions import NotifierException
 
@@ -28,19 +29,30 @@ class NotifierService:
                 )
             self.logger.info(f"Notification provider {provider_name} added")
     
-    def send_notification(self, message: str) -> None:
-        """Send notification to all available providers.
+    def send_notification(self, provider: NotifierInterface, message: SegmentedMessage) -> None:
+        """Send segmented notification to a specific provider.
         
         Args:
-            message: Message to send
+            provider: The notification provider to send to
+            message: SegmentedMessage object with header and message_parts
         """
-        if not self.providers:
-            raise RuntimeError("No notification providers available")
-
         try:
-            for provider in self.providers:
-                provider.send_notification(message=message)
+            # Send header first (if present)
+            if message.header:
+                provider.send_notification(message=message.header)
+            
+            # Send message parts
+            total_parts = len(message.message_parts)
+            for i, part in enumerate(message.message_parts):
+                # Add "Part X/Y" prefix only if multiple parts
+                if total_parts > 1:
+                    content = f"Part {i + 1}/{total_parts}\n\n{part}"
+                else:
+                    content = part
+                
+                provider.send_notification(message=content)
+                    
         except Exception as e:
-            self.logger.error(f"Error sending notification: {e}")
+            self.logger.error(f"Error sending notification to {type(provider).__name__}: {e}")
             raise NotifierException()
 

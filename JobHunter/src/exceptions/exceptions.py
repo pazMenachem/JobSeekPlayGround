@@ -10,15 +10,15 @@ class JobHunterException(Exception):
 
 class JobCrawlerException(JobHunterException):
     """Exception for job crawling."""
-    def __init__(self, message: str = JOB_CRAWLER_EXCEPTION_MESSAGE) -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__(JOB_CRAWLER_EXCEPTION_MESSAGE)
 
 class LLMException(JobHunterException):
     """Exception for LLM."""
-    def __init__(self, message: str = LLM_EXCEPTION_MESSAGE) -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__(LLM_EXCEPTION_MESSAGE)
 
 class NotifierException(JobHunterException):
     """Exception for notifier."""
-    def __init__(self, message: str = NOTIFIER_EXCEPTION_MESSAGE) -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__(NOTIFIER_EXCEPTION_MESSAGE)

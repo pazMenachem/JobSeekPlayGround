@@ -102,19 +102,18 @@ class JobHunterOrchestrator:
             ]
 
             self.logger.info("********* Starting to run *********")
-            
             # Step 1: Crawl jobs
-            self._crawl_jobs()
+            # self._crawl_jobs()
 
             # Step 2: Update job status using LLM
-            self._update_job_status()
+            # self._update_job_status()
             
             # Step 3: Filter jobs based on relevance
-            filtered_jobs: FilteredJobs = self._filter_jobs()
+            # filtered_jobs: FilteredJobs = self._filter_jobs()
             
             # Step 4: Send summary to user
-            self._send_summary(filtered_jobs=filtered_jobs)
-            
+            # self._send_summary(filtered_jobs=filtered_jobs)
+
             self.logger.info("********* Application finished successfully *********")
             
         except (JobCrawlerException, LLMException, NotifierException) as e:
@@ -163,7 +162,7 @@ class JobHunterOrchestrator:
         
         message: SegmentedMessage = SegmentedMessage(
             header="",
-            message_parts=[str(error.message)]
+            message_parts=[str(error)]
         )
         self._send_message(message=message)
     

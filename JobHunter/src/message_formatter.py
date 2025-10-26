@@ -1,13 +1,29 @@
 """Prompt formatter for creating LLM prompts from job data."""
 
 from typing import List
-from src.data_models import JobData, FilteredJobs, SegmentedMessage
+from src.data_models import JobData, RunSummary, SegmentedMessage
 from src.config import llm_settings
 
 PADDING_LENGTH = 200
 
 class MessageFormatterService:
     """Message formatter service for creating messages from job data."""
+
+    @staticmethod
+    def validate_base_prompt(prompt: str) -> str:
+        """Validate base prompt length against character limit.
+        
+        Args:
+            prompt: Base LLM prompt to validate
+            
+        Returns:
+            warning_message: Warning message if prompt is too long
+        """
+        limit = llm_settings.base_prompt_char_limit
+        if len(prompt) > limit:
+            warning = f"Base prompt is {len(prompt)} characters (recommended: {limit})"
+            return warning
+        return ""
 
     @staticmethod
     def format_llm_prompt(
@@ -38,55 +54,49 @@ class MessageFormatterService:
         return message_result
 
     @staticmethod
-    def format_summary(filtered_jobs: FilteredJobs, max_length: int) -> SegmentedMessage:
+    def format_summary(
+        run_summary: RunSummary,
+        message_max_length: int,
+    ) -> SegmentedMessage:
         """Format a readable summary of the filtered jobs for notifications.
         
         Args:
-            filtered_jobs: FilteredJobs object containing the filtered jobs
+            run_summary: RunSummary object containing the filtered jobs
+            message_max_length: Maximum message length per segment
 
         Returns:
             SegmentedMessage with header and message_parts for user notifications
         """
-        # Build header
+                
         header = (
-            "JobHunter Results Summary\n"
-            "\n"
-            f"Total jobs found: {filtered_jobs.total_found}\n"
-            f"Relevant jobs: {filtered_jobs.filtered_count}\n"
-            f"Filtered out: {filtered_jobs.total_found - filtered_jobs.filtered_count}\n"
-            "\n"
-            "Job Matches:\n"
+            f"JobHunter Results Summary\n"
+            f"Total jobs found: {run_summary.total_found}\n"
+            f"Relevant jobs: {run_summary.filtered_count}\n"
+            f"Filtered out: {run_summary.total_found - run_summary.filtered_count}\n"
+            f"{run_summary.notes}\n"
+            f"Job Matches:\n"
         )
-        
         message_parts = []
         current_part = ""
-        
-        for i, job in enumerate(filtered_jobs.relevant_jobs, 1):
-            reason = job.reason[:100] + "..." if len(job.reason) > 100 else job.reason
-            
+        for i, job in enumerate(run_summary.jobs, 1):
             job_text = (
-                f"{i}. {job.title} at {job.company} ({job.relevant.value})\n"
-                f"   {reason}\n"
-                f"   {job.url}\n"
-                f"\n"
+            f"\n{i}. {job.title} at {job.company}\n"
+            f"relevant: {job.relevant.value}\n"
+            f"reason: {job.reason}\n"
+            f"url: {job.url}\n"
             )
             
             # Check if adding this job would exceed effective limit
-            if len(current_part) + len(job_text) + PADDING_LENGTH > max_length:
-                # Save current part and start new one
+            if len(current_part) + len(job_text) + PADDING_LENGTH > message_max_length:
                 message_parts.append(current_part.rstrip())
                 current_part = job_text
             else:
-                # Add to current part
                 current_part += job_text
         
-        # Add final part
         if current_part:
             message_parts.append(current_part.rstrip())
         
-        # Add timestamp to last part
-        timestamp = filtered_jobs.filter_timestamp.strftime("%Y-%m-%d %H:%M:%S") if filtered_jobs.filter_timestamp else "Unknown"
-        message_parts[-1] += f"\n\nGenerated: {timestamp}"
+        message_parts[-1] += f"\n\nGenerated: {run_summary.filter_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
         
         return SegmentedMessage(
             header=header,

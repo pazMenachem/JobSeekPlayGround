@@ -1,9 +1,9 @@
 """Job filtering logic based on relevance configuration."""
 
 from typing import List
-from src.data_models import JobData, FilteredJobs, RelevanceStatus
+from src.data_models import JobData, RunSummary, RelevanceStatus
 from src.logger import get_logger
-from src.config import job_filter_settings
+from src.config import job_filter_settings, llm_settings
 
 
 class JobFilter:
@@ -21,34 +21,27 @@ class JobFilter:
     def filter_jobs(
         self,
         jobs: List[JobData],
-        filter_level: RelevanceStatus = job_filter_settings.default_job_filter_level
-        ) -> FilteredJobs:
+        filter_level: RelevanceStatus = job_filter_settings.default_job_filter_level,
+        run_summary: RunSummary = None
+        ) -> None:
         """Filter jobs based on relevance status and filter level.
         
         Args:
             jobs: List of JobData objects to filter
             filter_level: Filter level (RelevanceStatus enum) - default is ALL
-        Returns:
-            FilteredJobs object with relevant jobs and analysis results
+            run_summary: RunSummary object to store the results
         """
-        self.logger.info(f"Filtering {len(jobs)} jobs based on relevance status")
-        
-        if not jobs:
+        if not jobs or not run_summary:
             raise RuntimeError("No jobs provided for FILTERING")
         
         relevant_jobs = [job for job in jobs if self._should_include_job(job.relevant, filter_level)]
-        
-        self.logger.info(f"Job filtering complete: {len(relevant_jobs)}/{len(jobs)} jobs relevant")
-        
-        return FilteredJobs(
-            relevant_jobs=relevant_jobs,
-            total_found=len(jobs),
-            filtered_count=len(relevant_jobs)
-        )
+
+        run_summary.jobs = relevant_jobs
+        run_summary.filtered_count = len(relevant_jobs)
     
     def _should_include_job(
         self, 
-        job_relevant: RelevanceStatus, 
+        job_relevant: RelevanceStatus,
         filter_level: RelevanceStatus
         ) -> bool:
         """Determine if a job should be included based on filter level.

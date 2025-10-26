@@ -32,8 +32,8 @@ def _setup_logging() -> None:
         print(f"Could not create log file {log_file}: {e}")
     
     logging.basicConfig(
-        level=logging.INFO,
-        format='[%(asctime)s] [%(levelname)s] [%(name)s] [%(message)s]',
+        level=logging.DEBUG,
+        format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
         handlers=handlers
     )
     

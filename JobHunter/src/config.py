@@ -163,7 +163,7 @@ class LLMSettings:
         self, 
         base_llm_prompt: str,
         llm_provider: str,
-        llm_model: str ,
+        llm_model: str,
         api_key: str
         ) -> None:
         """Initialize the LLM settings.
@@ -178,6 +178,16 @@ class LLMSettings:
         self.base_llm_prompt = base_llm_prompt
         self.llm_provider = llm_provider
         self.llm_model = llm_model
+        
+        # Batching configuration (based on Gemini 2.5 Flash API limitations)
+        # Batch size limited by Gemini URL context tool (20 URLs max)
+        # Using 15 URLs per batch for safety margin (output token limit)
+        self.batch_size = 15  # Jobs per batch
+        self.rpm = 10  # Requests per minute (Gemini 2.5 Flash)
+        self.max_jobs_per_run = self.batch_size * self.rpm  # 150 jobs
+        self.base_prompt_char_limit = 2000  # Warning threshold
+        self.unlimited_mode = False  # For future local LLMs
+        
         self.enabled = bool(self.api_key)
 
 class TelegramSettings:

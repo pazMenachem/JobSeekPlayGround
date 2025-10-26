@@ -37,14 +37,11 @@ class NotifierService:
             message: SegmentedMessage object with header and message_parts
         """
         try:
-            # Send header first (if present)
             if message.header:
                 provider.send_notification(message=message.header)
             
-            # Send message parts
             total_parts = len(message.message_parts)
             for i, part in enumerate(message.message_parts):
-                # Add "Part X/Y" prefix only if multiple parts
                 if total_parts > 1:
                     content = f"Part {i + 1}/{total_parts}\n\n{part}"
                 else:

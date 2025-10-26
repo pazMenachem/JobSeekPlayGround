@@ -1,11 +1,14 @@
 """Job filter manager using abstract LLM interface."""
 
 import json
+import time
 from typing import List
 from src.data_models import JobData, RelevanceStatus
 from src.logger import get_logger
 from src.llm_service.llm_base import LLMInterface
 from src.exceptions.exceptions import LLMException
+from src.config import llm_settings
+from src.message_formatter import MessageFormatterService
 
 
 class LLMService:
@@ -27,26 +30,39 @@ class LLMService:
         
         self.logger.info("LLM service initialized...")
         
-    def update_job_status(self,* , jobs: List[JobData], prompt: str) -> None:
-        """
-        Update job status using LLM analysis.
-        """
-        self.logger.info(f"Updating status for {len(jobs)} jobs using LLM analysis")
+    def update_job_status(self, *, jobs: List[JobData]) -> None:
+        """Update job status using batched LLM analysis.
         
-        try:
-            ## Main logic
-            # Step 1: Send the prompt to the LLM
-            llm_response:str = self.llm_provider.send_to_llm(prompt)
-            self.logger.info(f"LLM response: {llm_response}")
+        Args:
+            jobs: List of JobData objects to analyze
+        """
+        self.logger.info(f"Analyzing {len(jobs)} jobs")
+        batch_size = llm_settings.batch_size
+        total_batches = (len(jobs) // batch_size) + 1
 
-            json_response:dict = self._clean_json_response(llm_response)
+        try:
+            # Process jobs in batches
+            for jobs_analyzed in range(0, len(jobs), batch_size):
+                batch = jobs[jobs_analyzed:jobs_analyzed + batch_size]
+                batch_num = (jobs_analyzed // batch_size) + 1
+                
+                self.logger.info(f"Processing batch {batch_num} out of {total_batches} batches...")
+                
+                prompt = MessageFormatterService.format_llm_prompt(batch)
+                self.logger.debug(f"Prompt: {prompt}")
+                response = self.llm_provider.send_to_llm(prompt)
+                self.logger.debug(f"Response: {response}")
+                json_data = self._clean_json_response(response)
+                self._parse_batch_response(json_data, batch)
+                
+                # Rate limiting delay between batches
+                if jobs_analyzed + batch_size < len(jobs):
+                    time.sleep(6)
             
-            # Step 2: Parse the response
-            self._parse_batch_response(json_response, jobs)
-            self.logger.info(f"Job status update complete..")
+            self.logger.info("LLM analysis complete")
             
         except Exception as e:
-            self.logger.error(f"Error during LLM phase: {e}")
+            self.logger.error(f"Error during LLM analysis: {e}")
             raise LLMException()
 
     def _parse_batch_response(self, json_response: list[dict], jobs: List[JobData]) -> None:

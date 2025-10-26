@@ -152,7 +152,7 @@ class JobScraper:
         unique_elements = []
         for element in job_elements:
             try:
-                href = element.get_attribute('href')
+                href = element.evaluate("el => el.href")
                 if href and href not in seen_urls:
                     seen_urls.add(href)
                     unique_elements.append(element)
@@ -201,7 +201,7 @@ class JobScraper:
         return JobData(
             id=f"{index}",
             title=element.inner_text(),
-            url=element.get_attribute('href'),
+            url=element.evaluate("el => el.href"),
             company=self._extract_company_name(self.page.url),
             source_url=self.page.url
         )

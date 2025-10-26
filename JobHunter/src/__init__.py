@@ -10,7 +10,7 @@ This package provides a comprehensive job hunting solution that:
 # Core data models
 from .data_models.job_data import JobData, RelevanceStatus
 from .data_models.search_request import SearchRequest
-from .data_models.filtered_jobs import FilteredJobs
+from .data_models.run_summary import RunSummary
 from .data_models.message_data import MessageData
 
 # Configuration
@@ -44,7 +44,7 @@ __all__ = [
     "JobData",
     "RelevanceStatus", 
     "SearchRequest",
-    "FilteredJobs",
+    "RunSummary",
     "MessageData",
     
     # Configuration

@@ -37,7 +37,6 @@ class TelegramProvider(NotifierInterface):
         await bot.send_message(
             chat_id=self.chat_id,
             text=message,
-            parse_mode='Markdown',
             disable_web_page_preview=True
         )
 

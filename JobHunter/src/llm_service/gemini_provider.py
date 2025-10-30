@@ -31,7 +31,7 @@ class GeminiProvider(LLMInterface):
         self.client = genai.Client(api_key=llm_settings.api_key)
         self.model_id = llm_settings.llm_model
 
-    def send_to_llm(self, prompt: str) -> str:
+    def _send_to_llm(self, prompt: str) -> str:
         """Send a prompt to the Gemini API and get the raw response.
 
         Args:
@@ -40,7 +40,6 @@ class GeminiProvider(LLMInterface):
         Returns:
             Raw response from the LLM (JSON string for batch processing)
         """
-        self.logger.debug("Sending batch prompt to Gemini API")
         
         # Configure tools for URL context
         tools = [{"url_context": {}}]
@@ -59,6 +58,4 @@ class GeminiProvider(LLMInterface):
         if not response.text:
             raise RuntimeError("Empty response from Gemini API")
         
-        self.logger.debug(f"Received response from Gemini: {response.text}")
         return response.text
-    

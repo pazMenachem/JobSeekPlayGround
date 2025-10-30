@@ -49,9 +49,7 @@ class LLMService:
                 self.logger.info(f"Processing batch {batch_num} out of {total_batches} batches...")
                 
                 prompt = MessageFormatterService.format_llm_prompt(batch)
-                self.logger.debug(f"Prompt: {prompt}")
                 response = self.llm_provider.send_to_llm(prompt)
-                self.logger.debug(f"Response: {response}")
                 json_data = self._clean_json_response(response)
                 self._parse_batch_response(json_data, batch)
                 

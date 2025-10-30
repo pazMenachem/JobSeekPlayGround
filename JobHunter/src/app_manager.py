@@ -48,6 +48,9 @@ TEST_DATA = [
 # [ ] **Job Storage System Redesign** - Define requirements and implement
 # [ ] **Duplicate Job Detection** - Integrate with storage
 # [ ] **Delete the source url prompt that is sent to the llm, it is not needed, maybe add it as header.
+# [X] **Fix url when sending to user, for some reason the url is not the full url.
+# example: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Israel-Raanana/SDK-Software-EngineerJR2005232?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364
+# should be https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Israel-Raanana/SDK-Software-Engineer >> _ <<JR2005232?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364
 # [X] **URL issue** - Retreiving the url for the job post doesnt get the full url. Example:
 # "/en-US/NVIDIAExternalCareerSite/job/Israel-Tel-Aviv/Clock-Design-Engineer_JR2000653?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364"
 # Missing the domain name, a could be solution is to open the url in a new tab and get the full url from the new tab.

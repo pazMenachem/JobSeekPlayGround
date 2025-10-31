@@ -13,11 +13,11 @@ class TelegramProvider(NotifierInterface):
         Args:
             bot_token: Telegram bot token
             chat_id: Telegram chat ID to send messages to
+            max_message_length: The maximum message length for the notifier
         """
-        super().__init__()
+        super().__init__(max_message_length=max_message_length)
         self.bot_token = bot_token
         self.chat_id = chat_id
-        self.max_message_length = max_message_length
     
     def _send_notification(self, message: str) -> None:
         """Send a notification message to Telegram.

@@ -18,7 +18,7 @@ class JobFilter:
         self.logger = get_logger("job_filter")
         self.logger.info("Job filter initialized...")
     
-    def filter_jobs(
+    def filter_jobs_by_relevance(
         self,
         jobs: List[JobData],
         filter_level: RelevanceStatus = job_filter_settings.default_job_filter_level,

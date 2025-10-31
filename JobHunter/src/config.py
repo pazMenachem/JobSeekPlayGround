@@ -227,6 +227,23 @@ class GmailSettings:
         self.max_message_length = max_message_length
         self.enabled = False
 
+class JobStorageSettings:
+    """Job storage settings for the job scraper application."""
+    
+    def __init__(
+        self,
+        storage_file_name: str = "sent_jobs.json",
+        job_url_expiry_days: int = 30
+        ) -> None:
+        """Initialize the job storage settings.
+        
+        Args:
+            storage_file_name: Name of the JSON file to store sent job URLs
+            job_url_expiry_days: Number of days to keep job URLs before expiry
+        """
+        self.storage_file_name = storage_file_name
+        self.job_url_expiry_days = job_url_expiry_days
+
 load_dotenv()
 
 browser_settings = BrowserSettings()
@@ -251,6 +268,6 @@ telegram_settings = TelegramSettings(
     chat_id=os.getenv("TELEGRAM_API_CHAT_ID", None)
     )
 
-gmail_settings = GmailSettings(
-    
-)
+gmail_settings = GmailSettings()
+
+job_storage_settings = JobStorageSettings()

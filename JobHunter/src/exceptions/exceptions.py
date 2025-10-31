@@ -2,6 +2,7 @@ GENERAL_EXCEPTION_MESSAGE = "Unknown General Exception"
 JOB_CRAWLER_EXCEPTION_MESSAGE = "Error during Job Crawler phase"
 LLM_EXCEPTION_MESSAGE = "Error during LLM phase"
 NOTIFIER_EXCEPTION_MESSAGE = "Error during Notifier phase"
+NO_NEW_JOBS_EXCEPTION_MESSAGE = "No new jobs found"
 
 class JobHunterException(Exception):
     """Base exception for JobHunter."""
@@ -22,3 +23,8 @@ class NotifierException(JobHunterException):
     """Exception for notifier."""
     def __init__(self) -> None:
         super().__init__(NOTIFIER_EXCEPTION_MESSAGE)
+
+class NoNewJobsException(JobHunterException):
+    """Exception for no new jobs."""
+    def __init__(self) -> None:
+        super().__init__(NO_NEW_JOBS_EXCEPTION_MESSAGE)

@@ -8,13 +8,9 @@ from datetime import datetime
 
 def _setup_logging() -> None:
     """Set up logging configuration."""
-    # Get the directory where the main script is located
-    main_dir = os.path.dirname(os.path.abspath(__file__))
-    # Go up to the project root (JobHunter directory)
-    # From src/logger/log_manager.py -> src/logger -> src -> JobHunter
-    project_root = os.path.dirname(os.path.dirname(main_dir))
     
-    # Create logs directory inside JobHunter project
+    main_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(main_dir))
     logs_dir = os.path.join(project_root, "logs")
     os.makedirs(logs_dir, exist_ok=True)
     
@@ -32,7 +28,7 @@ def _setup_logging() -> None:
         print(f"Could not create log file {log_file}: {e}")
     
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
         handlers=handlers
     )

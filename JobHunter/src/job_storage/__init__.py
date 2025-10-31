@@ -1,6 +1,5 @@
 """Job storage package for data persistence."""
 
-from .job_storage_manager import JobStorageManager
-from .results_manager import ResultsManager
+from .job_storage_service import JobStorageService
 
-__all__ = ['JobStorageManager', 'ResultsManager']
+__all__ = ['JobStorageService']

@@ -2,15 +2,15 @@
 
 from src.logger import get_logger
 from src.config import scraping_settings, llm_settings, NOTIFIER_PROVIDER_NAMES
-# from src.job_storage.job_storage import JobStorage
 from src.job_crawler_service.job_crawler_service import JobCrawlerService
+from src.job_storage.job_storage_service import JobStorageService
 from src.llm_service.factory import LLMProviderFactory
 from src.llm_service.llm_service import LLMService
 from src.job_filter.job_filter import JobFilter
 from src.notification_service.notifier_service import NotifierService
 from src.data_models import JobData, RunSummary, RelevanceStatus, SegmentedMessage
 from src.message_formatter import MessageFormatterService
-from src.exceptions.exceptions import JobCrawlerException, LLMException, NotifierException
+from src.exceptions.exceptions import JobCrawlerException, LLMException, NotifierException, NoNewJobsException
 from typing import List
 
 TEST_DATA = [
@@ -45,9 +45,11 @@ TEST_DATA = [
 
 
 ## TODO: >>
-# [ ] **Job Storage System Redesign** - Define requirements and implement
-# [ ] **Duplicate Job Detection** - Integrate with storage
-# [ ] **Delete the source url prompt that is sent to the llm, it is not needed, maybe add it as header.
+# [ ] Create service process that will run the app every day.
+# [ ] Container
+# [X] **Job Storage System Redesign** - Define requirements and implement
+# [X] **Duplicate Job Detection** - Integrate with storage
+# [X] **Delete the source url prompt that is sent to the llm, it is not needed, maybe add it as header.
 # [X] **Fix url when sending to user, for some reason the url is not the full url.
 # example: https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Israel-Raanana/SDK-Software-EngineerJR2005232?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364
 # should be https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Israel-Raanana/SDK-Software-Engineer >> _ <<JR2005232?locationHierarchy1=2fcb99c455831013ea52bbe14cf9326c&jobFamilyGroup=0c40f6bd1d8f10ae43ffaefd46dc7e78&workerSubType=0c40f6bd1d8f10adf6dae161b1844a15&workerSubType=ab40a98049581037a3ada55b087049b7&timeType=5509c0b5959810ac0029943377d47364
@@ -69,8 +71,8 @@ class JobHunterOrchestrator:
     def __init__(self) -> None:
         """Initialize the orchestrator."""
         self.logger = get_logger("orchestrator")
-        self.job_crawler_manager = None
-        self.job_storage_manager = None
+        self.job_crawler_service = None
+        self.job_storage_service = None
         self.job_filter = None
         self.llm_service = None
         self.notifier_service = None
@@ -83,10 +85,18 @@ class JobHunterOrchestrator:
     def _setup(self) -> None:
         """Setup the orchestrator."""
         self.job_crawler_service = JobCrawlerService()
-        self.llm_provider = LLMProviderFactory.create_provider()
-        self.llm_service = LLMService(self.llm_provider)
+        
+        self.job_storage_service = JobStorageService()
+        
+        self.llm_service = LLMService(
+            llm_provider=LLMProviderFactory.create_provider()
+            )
+        
+        self.notifier_service = NotifierService(
+            provider_names=NOTIFIER_PROVIDER_NAMES
+            )
+
         self.job_filter = JobFilter()
-        self.notifier_service = NotifierService(provider_names=NOTIFIER_PROVIDER_NAMES)
         self.run_summary = RunSummary()
     
     def run(self) -> None:
@@ -103,26 +113,32 @@ class JobHunterOrchestrator:
                     relevant=RelevanceStatus.YES,
                     reason="Unknown"
                 )
-                for i in range(1, 10)
+                for i in range(1, 11)
             ]
 
             self.logger.info("\n\t\t********* Starting to run *********\n")
             
             # Step 1: Crawl jobs
             # self._crawl_jobs()
+            
+            # Step 2: Filter duplicate jobs
+            self._filter_duplicate_jobs()
 
-            # Step 2: Update job status using LLM
+            # Step 3: Update job status using LLM
             # self._update_job_status()
             
-            # Step 3: Filter jobs based on relevance
-            self._filter_jobs()
+            # Step 4: Filter jobs based on relevance
+            self._filter_jobs_by_relevance()
             
-            # Step 4: Send summary to user
+            # Step 5: Send summary to user
             self._send_summary(run_summary=self.run_summary)
-
+            
+            # Step 6: Mark jobs as sent
+            self._mark_jobs_as_sent()
+            
             self.logger.info("\n\t\t********* Application finished successfully *********\n")
             
-        except (JobCrawlerException, LLMException, NotifierException) as e:
+        except (JobCrawlerException, LLMException, NotifierException, NoNewJobsException) as e:
             self._send_component_error(error=e)
 
         except KeyboardInterrupt:
@@ -141,25 +157,37 @@ class JobHunterOrchestrator:
         
         self._check_jobs_count()
 
+    def _filter_duplicate_jobs(self) -> None:
+        """Filter out jobs that have already been sent."""
+        self.logger.info(f"\n\n\t\t *** Starting Phase 2 - filtering duplicate jobs ***\n")
+        
+        initial_count = len(self.jobs)
+        self.jobs = self.job_storage_service.get_unsent_jobs(self.jobs)
+        
+        if not self.jobs:
+            raise NoNewJobsException()
+        
+        self.logger.info(f"Filtered {initial_count - len(self.jobs)} duplicate jobs, {len(self.jobs)} new jobs remaining")
+    
     def _update_job_status(self) -> None:
         """Update job status using LLM with batching."""
-        self.logger.info(f"\n\n\t\t *** Starting Phase 2 - updating job status using LLM ***\n")
+        self.logger.info(f"\n\n\t\t *** Starting Phase 3 - updating job status using LLM ***\n")
         self.llm_service.update_job_status(jobs=self.jobs)
         
-    def _filter_jobs(self) -> None:
+    def _filter_jobs_by_relevance(self) -> None:
         """Filter jobs based on relevance."""
-        self.logger.info(f"\n\n\t\t *** Starting Phase 3 - filtering jobs ***\n")
-        self.job_filter.filter_jobs(
+        self.logger.info(f"\n\n\t\t *** Starting Phase 4 - filtering jobs by relevance ***\n")
+        self.job_filter.filter_jobs_by_relevance(
             jobs=self.jobs, 
             run_summary=self.run_summary
             )
-        
+    
     def _send_summary(self, *, run_summary: RunSummary) -> None:
         """Send summary to user with deferred jobs and notes."""
-        self.logger.info(f"\n\n\t\t *** Starting Phase 4 - sending summary to user ***\n")
+        self.logger.info(f"\n\n\t\t *** Starting Phase 5 - sending summary to user ***\n")
 
         if not run_summary.jobs:
-            raise ValueError("No relevant jobs found.")
+            raise NoNewJobsException()
         
         for provider in self.notifier_service.providers:
             summary = MessageFormatterService.format_summary(
@@ -170,6 +198,11 @@ class JobHunterOrchestrator:
                 provider=provider, 
                 message=summary
                 )
+    
+    def _mark_jobs_as_sent(self) -> None:
+        """Mark jobs as sent in storage."""
+        self.logger.info(f"\n\n\t\t *** Starting Phase 6 - marking jobs as sent ***\n")
+        self.job_storage_service.mark_jobs_as_sent(self.run_summary.jobs)
     
     def _send_component_error(self, *, error: Exception) -> None:
         """Send component error to user."""

@@ -33,6 +33,8 @@ TARGET_URLS = [
     "https://copyleaks.com/careers",
 ]
 
+NOTIFIER_PROVIDER_NAMES = ["telegram"]
+
 DEFAULT_BASE_PROMPT = """
 You are a job relevance analyzer for computer science graduates. Analyze each job posting(url, title, company, description) and determine relevance.
 

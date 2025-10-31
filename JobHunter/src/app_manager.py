@@ -1,7 +1,7 @@
 """Application orchestrator for coordinating all components."""
 
 from src.logger import get_logger
-from src.config import scraping_settings, llm_settings
+from src.config import scraping_settings, llm_settings, NOTIFIER_PROVIDER_NAMES
 # from src.job_storage.job_storage import JobStorage
 from src.job_crawler_service.job_crawler_service import JobCrawlerService
 from src.llm_service.factory import LLMProviderFactory
@@ -86,36 +86,33 @@ class JobHunterOrchestrator:
         self.llm_provider = LLMProviderFactory.create_provider()
         self.llm_service = LLMService(self.llm_provider)
         self.job_filter = JobFilter()
-        self.notifier_service = NotifierService()
+        self.notifier_service = NotifierService(provider_names=NOTIFIER_PROVIDER_NAMES)
         self.run_summary = RunSummary()
-
-        ## TODO: shouldnt be hardcoded, should be set in the config file.
-        self.notifier_service.set_providers("telegram")
     
     def run(self) -> None:
         """Run the complete application workflow."""
 
         try:
-            # self.jobs = [
-            #     JobData(
-            #         id=f"{i}",
-            #         title=f"Data Engineer {i}",
-            #         company=f"Company {i}",
-            #         url=f"https://company{i}.com/careers/data-engineer",
-            #         source_url=f"https://company{i}.com/careers",
-            #         relevant=RelevanceStatus.YES,
-            #         reason="Unknown"
-            #     )
-            #     for i in range(1, 161)
-            # ]
+            self.jobs = [
+                JobData(
+                    id=f"{i}",
+                    title=f"Data Engineer {i}",
+                    company=f"Company {i}",
+                    url=f"https://company{i}.com/careers/data-engineer",
+                    source_url=f"https://company{i}.com/careers",
+                    relevant=RelevanceStatus.YES,
+                    reason="Unknown"
+                )
+                for i in range(1, 10)
+            ]
 
             self.logger.info("\n\t\t********* Starting to run *********\n")
             
             # Step 1: Crawl jobs
-            self._crawl_jobs()
+            # self._crawl_jobs()
 
             # Step 2: Update job status using LLM
-            self._update_job_status()
+            # self._update_job_status()
             
             # Step 3: Filter jobs based on relevance
             self._filter_jobs()
@@ -169,7 +166,10 @@ class JobHunterOrchestrator:
                 run_summary=run_summary,
                 message_max_length=provider.max_message_length,
             )
-            self._send_message(message=summary)
+            self.notifier_service.send_notification(
+                provider=provider, 
+                message=summary
+                )
     
     def _send_component_error(self, *, error: Exception) -> None:
         """Send component error to user."""

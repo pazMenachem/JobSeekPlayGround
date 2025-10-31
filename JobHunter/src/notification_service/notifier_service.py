@@ -11,22 +11,30 @@ from src.exceptions.exceptions import NotifierException
 class NotifierService:
     """Service for managing notification providers and sending messages."""
     
-    def __init__(self) -> None:
-        """Initialize the notifier service."""
+    def __init__(self, *, provider_names: List[str]) -> None:
+        """Initialize the notifier service.
+        
+        Args:
+            provider_names: The names of the providers to set
+        """
         self.logger = get_logger("notifier_service")
         self.providers: List[NotifierInterface] = []
+        self.set_providers(provider_names=provider_names)
+
         self.logger.info("Notifier service initialized...")
     
-    def set_providers(self, *args: List[str]) -> None:
+    def set_providers(self, *, provider_names: List[str]) -> None:
         """Set the notification providers.
         
         Args:
-            *args: The names of the providers to set
+            provider_names: The names of the providers to set
         """
-        for provider_name in args:
-            self.providers.append(
-                NotifierFactory.create_provider(provider_name)
-                )
+        if not provider_names:
+            raise ValueError("Provider names cannot be empty")
+        
+        for provider_name in provider_names:
+            provider = NotifierFactory.create_provider(provider_name)
+            self.providers.append(provider)
             self.logger.info(f"Notification provider {provider_name} added")
     
     def send_notification(self, provider: NotifierInterface, message: SegmentedMessage) -> None:
@@ -36,6 +44,8 @@ class NotifierService:
             provider: The notification provider to send to
             message: SegmentedMessage object with header and message_parts
         """
+        self.logger.info(f"Sending notification to {provider.__class__.__name__}")
+            
         try:
             if message.header:
                 provider.send_notification(message=message.header)
@@ -48,7 +58,7 @@ class NotifierService:
                     content = part
                 
                 provider.send_notification(message=content)
-                    
+
         except Exception as e:
             self.logger.error(f"Error sending notification to {type(provider).__name__}: {e}")
             raise NotifierException()

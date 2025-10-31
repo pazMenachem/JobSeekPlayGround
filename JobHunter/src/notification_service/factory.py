@@ -15,7 +15,7 @@ class NotifierFactory:
         """
         match provider_type.lower():
             case "gmail":
-                pass
+                raise NotImplementedError("Gmail notifications are not implemented yet")
             case "telegram":
                 return NotifierFactory._create_telegram_provider()
             case _:

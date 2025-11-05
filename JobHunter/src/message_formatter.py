@@ -66,7 +66,26 @@ class MessageFormatterService:
         Returns:
             SegmentedMessage with header and message_parts for user notifications
         """
-                
+        header = MessageFormatterService._create_header(run_summary)
+        message_parts = MessageFormatterService._create_body(
+            run_summary, message_max_length
+        )
+
+        return SegmentedMessage(
+            header=header,
+            message_parts=message_parts
+        )
+
+    @staticmethod
+    def _create_header(run_summary: RunSummary) -> str:
+        """Create header message for job summary.
+        
+        Args:
+            run_summary: RunSummary object containing the filtered jobs
+            
+        Returns:
+            Header string for the summary message
+        """
         header = (
             f"JobHunter Results Summary\n"
             f"Total jobs found: {run_summary.total_found}\n"
@@ -75,14 +94,31 @@ class MessageFormatterService:
             f"{run_summary.notes}\n"
             f"Job Matches:\n"
         )
+        return header
+
+    @staticmethod
+    def _create_body(
+        run_summary: RunSummary,
+        message_max_length: int,
+    ) -> List[str]:
+        """Create message body parts from job list.
+        
+        Args:
+            run_summary: RunSummary object containing the filtered jobs
+            message_max_length: Maximum message length per segment
+            
+        Returns:
+            List of message body parts
+        """
         message_parts = []
         current_part = ""
+
         for i, job in enumerate(run_summary.jobs, 1):
             job_text = (
-            f"\n{i}. {job.title} at {job.company}\n"
-            f"relevant: {job.relevant.value}\n"
-            f"reason: {job.reason}\n"
-            f"url: {job.url}\n"
+                f"\n{i}. {job.title} at {job.company}\n"
+                f"relevant: {job.relevant.name}\n"
+                f"reason: {job.reason}\n"
+                f"url: {job.url}\n"
             )
             
             # Check if adding this job would exceed effective limit
@@ -97,7 +133,4 @@ class MessageFormatterService:
         
         message_parts[-1] += f"\n\nGenerated: {run_summary.filter_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
         
-        return SegmentedMessage(
-            header=header,
-            message_parts=message_parts
-        )
+        return message_parts

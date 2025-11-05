@@ -103,29 +103,29 @@ class JobHunterOrchestrator:
         """Run the complete application workflow."""
 
         try:
-            self.jobs = [
-                JobData(
-                    id=f"{i}",
-                    title=f"Data Engineer {i}",
-                    company=f"Company {i}",
-                    url=f"https://company{i}.com/careers/data-engineer",
-                    source_url=f"https://company{i}.com/careers",
-                    relevant=RelevanceStatus.YES,
-                    reason="Unknown"
-                )
-                for i in range(1, 11)
-            ]
+            # self.jobs = [
+            #     JobData(
+            #         id=f"{i}",
+            #         title=f"Data Engineer {i}",
+            #         company=f"Company {i}",
+            #         url=f"https://company{i}.com/careers/data-engineer",
+            #         source_url=f"https://company{i}.com/careers",
+            #         relevant=RelevanceStatus.YES,
+            #         reason="Unknown"
+            #     )
+            #     for i in range(1, 11)
+            # ]
 
             self.logger.info("\n\t\t********* Starting to run *********\n")
             
             # Step 1: Crawl jobs
-            # self._crawl_jobs()
+            self._crawl_jobs()
             
             # Step 2: Filter duplicate jobs
             self._filter_duplicate_jobs()
 
             # Step 3: Update job status using LLM
-            # self._update_job_status()
+            self._update_job_status()
             
             # Step 4: Filter jobs based on relevance
             self._filter_jobs_by_relevance()

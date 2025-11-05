@@ -90,7 +90,7 @@ class BrowserSettings:
     def __init__(
         self, 
         browser_type: str = "firefox",
-        headless_mode: bool = False, 
+        headless_mode: bool = True, 
         page_load_timeout: int = 30
         ) -> None:
         """Initialize the browser settings.
@@ -132,7 +132,6 @@ class ScrapingSettings:
         self.keywords = keywords
         self.excluded_keywords = excluded_keywords
 
-
 class OutputSettings:
     """Output settings for the job scraper application."""
 
@@ -145,7 +144,6 @@ class OutputSettings:
         """
         self.output_file = output_file
         self.log_level = log_level
-
 
 class JobFilterSettings:
     """Job filtering settings for the job scraper application."""

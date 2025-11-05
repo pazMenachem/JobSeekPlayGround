@@ -47,6 +47,7 @@ TEST_DATA = [
 ## TODO: >>
 # [ ] Create service process that will run the app every day.
 # [ ] Container
+# [ ] Add data folder to git ignore.
 # [X] **Job Storage System Redesign** - Define requirements and implement
 # [X] **Duplicate Job Detection** - Integrate with storage
 # [X] **Delete the source url prompt that is sent to the llm, it is not needed, maybe add it as header.

@@ -39,6 +39,8 @@ calculatorCICD/
 
 ## 🗺️ Learning Stages
 
+> **Status:** stages 1–4 are built and run in CI. Stages 5–8 are a roadmap of what I intend to add next, not work that exists in this repository.
+
 ### **Stage 1: Foundation & Code Quality**
 **Goal**: Establish professional code quality standards
 - Add type hints and comprehensive documentation
@@ -147,7 +149,7 @@ pytest --cov=src --cov-report=html
 This project includes automated security scanning:
 - **Safety**: Scans dependencies for known vulnerabilities
 - **Bandit**: Static analysis for security anti-patterns
-- **Regular Updates**: Dependabot keeps dependencies current
+Both run in a job parallel to the tests, and both are suffixed `|| true` — they report, they do not gate.
 
 ## 📊 CI/CD Pipeline
 
@@ -162,4 +164,3 @@ The GitHub Actions pipeline runs on every push to `main` and includes:
 **Pipeline Triggers**:
 - Push to `main` branch (only for calculatorCICD folder changes)
 - Manual workflow dispatch
-- Pull requests targeting `main`
